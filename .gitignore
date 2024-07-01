@@ -1,5 +1,9 @@
 ypp
 clouds.yaml
+env.bat
+Winpython64-*.exe
+WPy64-*
+
 
 
 # Byte-compiled / optimized / DLL files
