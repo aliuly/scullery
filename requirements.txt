@@ -1,0 +1,17 @@
+#
+# Requirements
+#
+# --only-binary=netifaces
+python-openstackclient
+otcextensions
+
+# doc generation
+docutils
+sphinx
+myst-parser
+sphinx-autodoc2
+sphinx-argparse
+
+# crypt
+cryptography
+passlib
