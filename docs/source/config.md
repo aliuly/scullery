@@ -76,7 +76,7 @@ clouds:
       user_domain_name: 'OTC00000000001000000xxx'
       username: '<USER_NAME>'
       password: '<PASSWORD>'
-      # project_name: '<eu-de_project>'
+      project_name: '<eu-de_project>'
       # or project_id: '<123456_PROJECT_ID>'
       # or user_domain_id: '<123456_DOMAIN_ID>'
       # auth_url: 'https://iam.eu-de.otc.t-systems.com:443/v3'
