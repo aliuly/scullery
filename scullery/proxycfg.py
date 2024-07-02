@@ -61,23 +61,22 @@ def show_autocfg(opts = None):
     print('// Contents:')
     print(jstext)
 
-def proxy_cfg(autocfg,debug=False):
+def proxy_cfg(debug=False):
   ''' Configure proxy
 
-  :param bool autocfg: If true, will use the system AutoCfgURL
   :param bool debug: (optional) Show the proxy being used
 
   Configure proxy as needed.  If needed, will configure the proxy
   by setting the environment.
   '''
-  if not has_winreg or not autocfg: return
+  if not has_winreg: return
   proxy, url, jstext = proxy_auto_cfg()
   if not proxy: return
 
-  os.environ['http_proxy'] = 'http://{proxy}/'.format(proxy=proxy)
-  os.environ['https_proxy'] = 'http://{proxy}/'.format(proxy=proxy)
-  if debug:
-    sys.stderr.write('Using proxy: {proxy}\n'.format(proxy=proxy))
+  os.environ['http_proxy'] = f'http://{proxy}/'
+  os.environ['https_proxy'] = f'http://{proxy}/'
+  if debug: sys.stderr.write(f'Using proxy: {proxy}\n')
+    
 
 def autocfg_vars():
   proxy, url, jstext = proxy_auto_cfg()

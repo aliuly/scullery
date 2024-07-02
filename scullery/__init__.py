@@ -23,6 +23,7 @@ saved_path = list(sys.path)
 '''
 sys.path.append(os.path.dirname(__file__))
 
+
 from version import VERSION
 import __meta__
 
@@ -53,7 +54,6 @@ def cloud(cloud_name:str = '', **kwargs):
     else:
       opt = ypp.lookup(K.CLOUD)
       if not opt is None: fopts[K.CLOUD] = ypp.lookup(K.CLOUD)
-    ic(fopts)
-    # ~ clouds[cloud_name] = openstack.connect(**fopts)
+    clouds[cloud_name] = openstack.connect(**fopts)
 
   return clouds[cloud_name]
