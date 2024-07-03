@@ -20,6 +20,9 @@ def proxy_auto_cfg():
   Looks-up the AutoConfigURL from the Windows registry and tries to
   find a valid proxy setting from the returned text.
   '''
+  if not has_winreg:
+    sys.stderr.write('No proxy_auto_cfg possible\n')
+    return None, None, None
   REG_PATH = r'Software\Microsoft\Windows\CurrentVersion\Internet Settings'
   REG_KEY_NAME = 'AutoConfigURL'
   registry_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_PATH, 0,
@@ -76,7 +79,7 @@ def proxy_cfg(debug=False):
   os.environ['http_proxy'] = f'http://{proxy}/'
   os.environ['https_proxy'] = f'http://{proxy}/'
   if debug: sys.stderr.write(f'Using proxy: {proxy}\n')
-    
+
 
 def autocfg_vars():
   proxy, url, jstext = proxy_auto_cfg()
