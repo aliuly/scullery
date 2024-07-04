@@ -1,4 +1,4 @@
-REM ~ @echo off
+@echo off
 setlocal
 
 if EXIST %~dp0%env.bat (

@@ -1,9 +1,11 @@
 #
 # Requirements
 #
+# Removed these as the APIs I want to use are not properly
+# implemented in the python SDK
 # --only-binary=netifaces
-python-openstackclient
-otcextensions
+# python-openstackclient
+# otcextensions
 
 # doc generation
 docutils

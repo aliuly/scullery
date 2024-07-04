@@ -3,7 +3,6 @@
 
 '''
 
-import openstack
 import os
 import sys
 # ~ import typing
@@ -23,10 +22,8 @@ saved_path = list(sys.path)
 '''
 sys.path.append(os.path.dirname(__file__))
 
-
 from version import VERSION
 import __meta__
-
 import consts as K
 
 sys.path = saved_path

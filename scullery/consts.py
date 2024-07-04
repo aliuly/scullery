@@ -2,9 +2,10 @@
 # Defined constants
 #
 
+HOME = 'HOME'
 CLOUD = 'cloud'
 DEFAULT_CLOUD_NAME = 'otc'
-OPENSTACK_LOGGING = 'openstack_logging'
+OS_CONFIG_FILE = 'OS_CLIENT_CONFIG_FILE'
 
 SHOWPROXY = 'showproxy'
 DEBUG = 'debug'

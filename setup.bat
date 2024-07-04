@@ -18,7 +18,9 @@ if NOT "%proxy"=="" (
 call %~dp0%windows\pyver.bat
 
 if NOT EXIST %~dp0%WPYDIR%\scripts\env.bat (
-  %~dp0\windows\wget.exe -S https://github.com/winpython/winpython/releases/download/%WPYREL%/%WPYDIST%
+  if NOT EXIST %WPYDIST% (
+    %~dp0\windows\wget.exe -S https://github.com/winpython/winpython/releases/download/%WPYREL%/%WPYDIST%
+  )
   %WPYDIST% -o"%~dp0" -y
 )
 call %~dp0%WPYDIR%\scripts\env.bat
