@@ -9,8 +9,6 @@ try:
 except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
-import consts as K
-
 class STR:
   '''String constants for this module'''
   ENV_PREFIX = 'OS_'
@@ -31,6 +29,7 @@ class STR:
   PROJECT_NAME = 'project_name'
 
   REGION_NAME = 'region_name'
+
 attributes = [
   STR.USER_DOMAIN_NAME,
   STR.USERNAME,
@@ -82,24 +81,36 @@ def creds(cloud_name:str|None = None, **kwargs) -> dict:
     cloud_yamls.append(os.path.join(os.environ[STR.HOME],STR.OS_CFG_HOME,STR.CLOUDS_YAML))
   cloud_yamls.append(os.path.join(STR.ETC_CFG,STR.CLOUDS_YAML))
 
-  if cloud_name is None:  raise ValueError('No parameter "cloud_name" specified')
-
   for cfgfile in cloud_yamls:
     if not os.path.isfile(cfgfile): continue
     with open(cfgfile, 'r') as fp:
       ydat = yaml.safe_load(fp)
-    if not (STR.CLOUDS in ydat and cloud_name in ydat[STR.CLOUDS] and STR.AUTH in ydat[STR.CLOUDS][cloud_name]): continue
-    kwargs = ydat[STR.CLOUDS][cloud_name][STR.AUTH]
+    if not STR.CLOUDS in ydat: continue
+
+    kwargs = None
+    tmp_name = cloud_name
+    if cloud_name is None:
+      for cn,dat in ydat[STR.CLOUDS].items():
+        if isinstance(dat,dict) and STR.AUTH in dat:
+          kwargs = dat[STR.AUTH]
+          tmp_name = cn
+          break
+    else:
+      if not (cloud_name in ydat[STR.CLOUDS] and STR.AUTH in ydat[STR.CLOUDS][cloud_name]): continue
+      kwargs = ydat[STR.CLOUDS][cloud_name][STR.AUTH]
+
     # If no project_name but there is a region_name, use that...
-    if not STR.PROJECT_NAME in kwargs and STR.REGION_NAME in ydat[STR.CLOUDS][cloud_name]:
-      kwargs[STR.PROJECT_NAME] = ydat[STR.CLOUDS][cloud_name][STR.REGION_NAME]
+    if not STR.PROJECT_NAME in kwargs and STR.REGION_NAME in ydat[STR.CLOUDS][tmp_name]:
+        kwargs[STR.PROJECT_NAME] = ydat[STR.CLOUDS][tmp_name][STR.REGION_NAME]
+    if kwargs is None: continue
+
     if os.path.basename(cfgfile) == STR.CLOUDS_YAML:
       secure_yaml = os.path.join(os.path.dirname(cfgfile),STR.SECURE_YAML)
       if os.path.isfile(secure_yaml):
         with open(secure_yaml, 'r') as fp:
           ydat = yaml.safe_load(fp)
-        if STR.CLOUDS in ydat and cloud_name in ydat[STR.CLOUDS] and STR.AUTH in ydat[STR.CLOUDS][cloud_name]:
-          kwargs.update(ydat[STR.CLOUDS][cloud_name][STR.AUTH])
+        if STR.CLOUDS in ydat and cloud_name in ydat[STR.CLOUDS] and STR.AUTH in ydat[STR.CLOUDS][tmp_name]:
+          kwargs.update(ydat[STR.CLOUDS][tmp_name][STR.AUTH])
     if check_kwargs(kwargs): return kwargs
 
   raise ValueError('No configuration found')

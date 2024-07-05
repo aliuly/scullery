@@ -2,8 +2,6 @@
 #
 # API sessions
 #
-import json
-import requests
 
 try:
   from icecream import ic
@@ -46,6 +44,29 @@ class Iam:
     for role in self.sys_roles:
       if role['name'] == name or ('display_name' in role and role['display_name'] == name): return role
     raise KeyError(f'Role "{name}" not found')
+
+  def new_role(self, *, display_name:str, policy:dict|list, role_type:str = 'XA', description:str|None = None) -> dict:
+    if description is None: description = f'Custom policy {display_name}'
+    if isinstance(policy,list):
+      policy = { 'Statement': policy, 'Version': '1.1' }
+    else:
+      if not 'Version' in policy: policy['Version'] = '1.1'
+    resp = self.session.post(self.api_path('v3.0/OS-ROLE/roles'), json = {
+      'role': {
+        'display_name': display_name,
+        'type': role_type,
+        'description': description,
+        'policy': policy,
+      }
+    })
+    if resp.status_code != 201 or not 'role' in resp.json():
+      raise RuntimeError(resp.text)
+    return resp.json()['role']
+    
+  def del_role(self, role_id:str) -> None:
+    resp = self.session.delete(self.api_path(f'v3.0/OS-ROLE/roles/{role_id}'))
+    if not resp.status_code in [200, 204]:
+      raise RuntimeError(resp.text if resp.text else resp.reason)
 
   def groups(self, name:str|None = None) -> list:
     params = dict() if name is None else { 'params': { 'name': name } }
@@ -103,20 +124,6 @@ if __name__ == '__main__':
   cfg = creds.creds(cloud_name = 'otc-de-iam')
   api = api.ApiSession(cfg)
 
-  for role in api.iam.system_roles():
-    values = {
-      'description': '',
-      'display_name': '',
-    }
-    values.update(role)
-    print('{name:16} {type} {display_name:24} {description}'.format(**values))
-  for role in api.iam.custom_roles():
-    values = {
-      'description': '',
-      'display_name': '',
-    }
-    values.update(role)
-    print('{name:16} {type} {display_name:24} {description}'.format(**values))
 
   # ~ de_id = api.iam.projects(name = 'eu-de')[0]['id']
   # ~ new_id = api.iam.new_project(name = 'eu-de_onetwo', parent_id = de_id, description = 'Test project')
@@ -151,20 +158,12 @@ if __name__ == '__main__':
     # ~ print('{name:16} {type} {display_name}: {description}'.format(**perm))
     # ~ # ic(perm)
 
-  role = api.iam.get_role('ACME-kermit-jump')
-  ic(role)
-  # ~ role = api.iam.get_role('te_admin')
-  # ~ ic(role)
-
+  
   # TODO:
   # Add domain permissions: https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/permission_management/granting_permissions_to_a_user_group_of_a_domain.html
   # Add project permissions: https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/permission_management/granting_permissions_to_a_user_group_corresponding_to_a_project.html
   # Add user to group: https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/user_group_management/adding_a_user_to_a_user_group.html
   # Remove user from group? https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/user_management/deleting_a_user_from_a_user_group.html
-  # Create role
-  # Remove role
-  # Create policy: https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/custom_policy_management/creating_a_custom_policy.html#iam-11-0016
-  # Delete policy: https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/custom_policy_management/deleting_a_custom_policy.html
   # User operations:
   #   list users: https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/user_management/querying_a_user_list.html#en-us-topic-0057845638
   #   new user: https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/user_management/creating_a_user.html

@@ -4,6 +4,7 @@
 #
 import json
 import requests
+import subprocess
 import sys
 
 try:
@@ -12,6 +13,7 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 import iam
+import tms
 
 from creds import STR as CRSTR
 
@@ -21,8 +23,7 @@ def http_logging(level:int = 1) -> None:
   :param level: Debug level (defaults to `1`)
   '''
   import http.client
-  http.client.HTTPConnection.debuglevel = 1
-
+  http.client.HTTPConnection.debuglevel = level
 
 class ApiSession:
   IAM_HOST = 'iam.{region}.otc.t-systems.com'
@@ -67,11 +68,22 @@ class ApiSession:
 
     self.token = response.headers['X-Subject-Token']
     self.iam = iam.Iam(self)
+    self.tms = tms.Tms(self)
 
   def __del__(self) -> None:
     if not self.token is None:
       if sys.meta_path is None:
-        sys.stderr.write('Error deleting session... Python is shutting down\n')
+        sys.stderr.write('Deleting session while Python is shutting down\n')
+        try:
+          rc = subprocess.run(['curl', '-k',
+                        '-H', f'X-Auth-Token: {self.token}',
+                        '-H', f'X-Subject-Token: {self.token}',
+                        '-X', 'DELETE',
+                        self.tokens_api_path()])
+          if rc.returncode != 0: sys.stderr.write(f'Exit code: {rc.returncode}\n')
+        except Exception as e:
+          sys.stderr.write(str(e)+'\n')
+        
       else:
         response = requests.delete(self.tokens_api_path(), headers = {
             'X-Auth-Token': self.token,
@@ -91,11 +103,9 @@ class ApiSession:
             'X-Auth-Token': self.token,
         })
 
-
-
 if __name__ == '__main__':
   import creds
   cfg = creds.creds(cloud_name = 'otc-de-iam')
   api = ApiSession(cfg)
   ic(api)
-  del(api)
+  # ~ del(api)

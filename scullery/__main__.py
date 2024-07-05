@@ -5,9 +5,6 @@
 import os
 import sys
 
-# ~ import typing
-# ~ import yaml
-
 from argparse import ArgumentParser
 
 try:
@@ -18,87 +15,74 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 if '__file__' in globals():
   sys.path.append(os.path.join(os.path.dirname(__file__),'..'))
 
+
 import scullery
-import ypp
-import scullery.consts as K
 import scullery.proxycfg as proxycfg
-import string
-import ypp.pwhash
+
+import scullery.rcp_roles as rcp_roles
+import scullery.rcp_tms as rcp_tms
 
 from scullery import cloud
+
+SHOWPROXY = 'showproxy'
+DISPATCH_TABLE = dict()
+DISPATCH_TABLE['tms'] = rcp_tms.run
+DISPATCH_TABLE['role'] = rcp_roles.run
 
 def cmd_cli():
   ''' Command Line Interface argument parser '''
   cli = ArgumentParser(prog=scullery.__meta__.name,description=scullery.__meta__.description)
-  
-  grp1 = cli.add_argument_group('Pre-processor options')
-  grp1.add_argument('-D','--define', help='Add constant', action='append', default=[])
-  grp1.add_argument('-I','--include', help='Add Include path', action='append', default=[])
-  grp1.add_argument('-C','--config', help='Read configuration file', action='append', default=[])
-  
+
+  cli.add_argument('-C','--cloud', help='Specify default cloud config')
+  cli.add_argument('-d', '--debug', help='Turn on debugging options', action='store_true', default = False)
   cli.add_argument('-V','--version', action='version', version='%(prog)s '+ scullery.VERSION)
   cli.add_argument('-A','--autocfg',help='Use WinReg to configure proxy', action='store_true', default = False)
   cli.set_defaults(excmd = None)
 
   grp1 = cli.add_argument_group('Sub command options')
   grp1.add_argument('--showproxy', help = 'Show proxy configuration (Use -Ddebug for more info)',
-                  dest = 'excmd', action='store_const', const = K.SHOWPROXY)
-  grp1.add_argument('--pwgen', help='Generate passwords (Use -Dpwlen=num, -Dupper, -Dlower -Ddigits, -Dn=count)',
-                  dest = 'excmd', action='store_const', const = 'pwgen')
+                  dest = 'excmd', action='store_const', const = SHOWPROXY)
 
-  cli.add_argument('recipe', help='Recipe(s) to run', nargs='*')
+  cli.add_argument('recipe', help='Recipe(s) to run', nargs=1)
   return cli
 
-def run_recipe(txt:str) -> None:
-  exec(txt)
+def run_recipe(recipe:str, argv:list[str], autocfg:bool = False) -> None:
+  if autocfg: proxycfg.proxy_cfg()
+  
+  if recipe in DISPATCH_TABLE:
+    DISPATCH_TABLE[recipe](argv)
+  else:
+    with open(recipe, 'r') as fp:
+      txt = fp.read()
+    sys.stderr.write(f'Running {recipe}\n')
+    exec(txt)
+  scullery.clean_up()
+
+def show_proxy(autocfg:bool, debug:bool = False) -> None:
+  if autocfg:
+    proxy, url, jstext = proxycfg.proxy_auto_cfg()
+    print(f'Auto config URL: {url}')
+    print(f'Proxy: {proxy}')
+    if debug: print(f'Javascript:\n{jstext}')
+  else:
+    print('No proxy autoconfiguration')
+    if 'http_proxy' in os.environ: print('http_proxy:  {http_proxy}'.format(http_proxy=os.environ['http_proxy']))
+    if 'https_proxy' in os.environ: print('https_proxy: {https_proxy}'.format(https_proxy=os.environ['https_proxy']))
 
 def main(argv:list[str]) -> None:
   cli = cmd_cli()
-  args = cli.parse_args(argv)
-  ic(args)
+  args, script_args = cli.parse_known_args(argv)
+  
+  if not args.cloud is None: scullery.defaults['cloud'] = args.cloud
+  
   if args.excmd is None:
-    if len(args.recipe) == 0:
-      sys.stderr.write('No recipes specified\n')
+    if len(args.recipe) != 1:
+      sys.stderr.write('Must specify one recipe\n')
       sys.exit(0)
-    if args.autocfg: proxycfg.proxy_cfg()
-
-    ypp.init(args.config, args.include, args.define, {
-        K.CLOUD: K.DEFAULT_CLOUD_NAME,
-      }, '')
-    for recipe in args.recipe:
-      sys.stderr.write(f'Running {recipe}\n')
-      txt= ypp.process(recipe)
-      run_recipe(txt)
-  elif args.excmd == K.SHOWPROXY:
-    debug = True if K.DEBUG in args.define else False
-    if args.autocfg:
-      proxy, url, jstext = proxycfg.proxy_auto_cfg()
-      print(f'Auto config URL: {url}')
-      print(f'Proxy: {proxy}')
-      if debug: print(f'Javascript:\n{jstext}')
-    else:
-      print('No proxy autoconfiguration')
-      if 'http_proxy' in os.environ: print('http_proxy:  {http_proxy}'.format(http_proxy=os.environ['http_proxy']))
-      if 'https_proxy' in os.environ: print('https_proxy: {https_proxy}'.format(https_proxy=os.environ['https_proxy']))
-  elif args.excmd == K.PWGEN:
-    pwlen = 8
-    chrset = ''
-    count = 8
-    for opts in args.define:
-      if opts.lower() == K.UPPER:
-        chrset += string.ascii_uppercase
-      elif opts.lower() == K.LOWER:
-        chrset += string.ascii_lowercase
-      elif opts.lower() == K.DIGITS:
-        chrset += string.digits
-      elif opts.lower().startswith(K.PWLEN + '='):
-        pwlen = int(opts[len(K.PWLEN)+1:])
-      elif opts.lower().startswith('n='):
-        count = int(opts[2:])
-    if chrset == '': chrset = string.ascii_uppercase + string.ascii_lowercase + string.digits
-    for i in range(count):
-      print(ypp.pwhash.gen_rand(pwlen, chrset))
-    
+    if args.debug: scullery.api.http_logging(2)
+    run_recipe(args.recipe[0], script_args, args.autocfg)
+  elif args.excmd == SHOWPROXY:
+    show_proxy(args.autocfg, args.debug)
     
 ###################################################################
 #
