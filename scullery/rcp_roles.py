@@ -26,11 +26,14 @@ def dump_roles(roles):
     print('{name:16} {type} {display_name:24} {description}'.format(**values))
 
 def run(argv:list[str]) -> None:
-  print(argv)
   cc = cloud()
 
   if len(argv) == 0:
     dump_roles(cc.iam.custom_roles())
+    # ~ resp = cc.get(f'https://iam.{cc.region}.otc.t-systems.com/v3/roles', params = {
+      # ~ 'name': 'te_admin',
+    # ~ })
+    # ~ print(json.dumps(resp.json(),indent=2))
   elif argv[0] == 'system':
     dump_roles(cc.iam.system_roles())
   elif argv[0] == 'get':

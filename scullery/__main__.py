@@ -48,7 +48,7 @@ def cmd_cli():
   cli.set_defaults(excmd = None)
 
   grp1 = cli.add_argument_group('Sub command options')
-  grp1.add_argument('--showproxy', help = 'Show proxy configuration (Use -Ddebug for more info)',
+  grp1.add_argument('--showproxy', help = 'Show proxy configuration',
                   dest = 'excmd', action='store_const', const = SHOWPROXY)
 
   cli.add_argument('recipe', help='Recipe(s) to run', nargs=1)

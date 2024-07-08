@@ -28,33 +28,20 @@ def run(argv:list[str]) -> None:
     if len(argv) >= 2:
       grpname = argv[1]
       desc = None if len(argv) == 2 else argv[2]
-      if not '_' in prjname:
-        print('No region specified')
-        return
-      region, _ = prjname.split('_',1)
-      regdat = cc.iam.projects(name=region)
-      if len(regdat) != 1:
-        print(f'Unknown region {region}')
-        return
 
-      newid = cc.iam.new_project(prjname, regdat[0]['id'], desc)
-      print('prj id', newid)
-    else:
-      print('Usage: add <prjname> [description]')
-
+      newid = cc.iam.new_group(grpname, desc)
+      print('grp id', newid)
   elif argv[0] == 'del' or argv[0] == 'rm' or argv[0] == 'remove':
     try:
-      role = cc.iam.get_role(argv[1])
-      print(role)
-      cc.iam.del_role(role['id'])
+      grps = cc.iam.groups(argv[1])
+      cc.iam.del_group(grps[0]['id'])
     except KeyError:
-      print('Role already deleted')
+      print('Group already deleted')
   else:
     print('Usage')
-    print('default : list custom roles')
-    print('system : list system roles')
-    print('get role : get details for role')
-    print('add : add kermit role')
-    print('del : del kermit role')
+    print('default : list groups')
+    print('get group : get details for group')
+    print('add grpname [descp: add new group')
+    print('del grpname : del group')
 
 

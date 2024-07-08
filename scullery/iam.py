@@ -89,6 +89,11 @@ class Iam:
       raise RuntimeError(resp.text)
     return resp.json()['group']['id']
 
+  def del_group(self, grp_id:str) -> None:
+    resp = self.session.delete(self.api_path(f'v3/groups/{grp_id}'))
+    if not resp.status_code in [200, 204]:
+      raise RuntimeError(resp.text if resp.text else resp.reason)
+
   def get_domain_group_perms(self, domid:str, grpid:str) -> list:
     path = f'v3/domains/{domid}/groups/{grpid}/roles'
     resp = self.session.get(self.api_path(path))
@@ -102,6 +107,15 @@ class Iam:
     if resp.status_code != 200 or not 'roles' in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['roles']
+
+  def grant_project_group_perms(self, prjid:str, grpid:str, roleid:str):
+    resp = self.session.put(self.api_path(f'v3/projects/{prjid}/groups/{grpid}/roles/{roleid}'))
+    if resp.status_code != 204:
+      raise RuntimeError(resp.text if resp.text else resp.reason)
+  def revoke_project_group_perms(self, prjid:str, grpid:str, roleid:str):
+    resp = self.session.delete(self.api_path(f'v3/projects/{prjid}/groups/{grpid}/roles/{roleid}'))
+    if resp.status_code != 204:
+      raise RuntimeError(resp.text if resp.text else resp.reason)
 
   def projects(self, name:str|None = None) -> list:
     params = dict() if name is None else { 'params': { 'name': name } }

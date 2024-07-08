@@ -116,6 +116,11 @@ class ApiSession:
             'X-Auth-Token': self.token,
         })
 
+  def put(self, api_url, **kwargs):
+    return requests.put(api_url, **kwargs, headers = {
+            'X-Auth-Token': self.token,
+        })
+
 if __name__ == '__main__':
   import creds
   cfg = creds.creds(cloud_name = 'otc-de-iam')
