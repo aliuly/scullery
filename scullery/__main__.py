@@ -19,6 +19,8 @@ if '__file__' in globals():
 import scullery
 import scullery.proxycfg as proxycfg
 
+import scullery.rcp_groups as rcp_groups
+import scullery.rcp_projects as rcp_projects
 import scullery.rcp_roles as rcp_roles
 import scullery.rcp_tms as rcp_tms
 
@@ -27,16 +29,22 @@ from scullery import cloud
 SHOWPROXY = 'showproxy'
 DISPATCH_TABLE = dict()
 DISPATCH_TABLE['tms'] = rcp_tms.run
+DISPATCH_TABLE['tag'] = rcp_tms.run
 DISPATCH_TABLE['role'] = rcp_roles.run
+DISPATCH_TABLE['project'] = rcp_projects.run
+DISPATCH_TABLE['prj'] = rcp_projects.run
+DISPATCH_TABLE['grp'] = rcp_groups.run
+DISPATCH_TABLE['group'] = rcp_groups.run
 
 def cmd_cli():
   ''' Command Line Interface argument parser '''
   cli = ArgumentParser(prog=scullery.__meta__.name,description=scullery.__meta__.description)
 
-  cli.add_argument('-C','--cloud', help='Specify default cloud config')
-  cli.add_argument('-d', '--debug', help='Turn on debugging options', action='store_true', default = False)
-  cli.add_argument('-V','--version', action='version', version='%(prog)s '+ scullery.VERSION)
   cli.add_argument('-A','--autocfg',help='Use WinReg to configure proxy', action='store_true', default = False)
+  cli.add_argument('-C','--cloud', help='Specify default cloud config')
+  cli.add_argument('-I','--include', help='Add Include path', action='append', default=[  ])
+  cli.add_argument('-V','--version', action='version', version='%(prog)s '+ scullery.VERSION)
+  cli.add_argument('-d', '--debug', help='Turn on debugging options', action='store_true', default = False)
   cli.set_defaults(excmd = None)
 
   grp1 = cli.add_argument_group('Sub command options')
@@ -46,12 +54,17 @@ def cmd_cli():
   cli.add_argument('recipe', help='Recipe(s) to run', nargs=1)
   return cli
 
-def run_recipe(recipe:str, argv:list[str], autocfg:bool = False) -> None:
+def run_recipe(recipe:str, argv:list[str], autocfg:bool = False, incpath:list[str] = []) -> None:
   if autocfg: proxycfg.proxy_cfg()
-  
+
   if recipe in DISPATCH_TABLE:
     DISPATCH_TABLE[recipe](argv)
   else:
+    if not os.path.isfile(recipe):
+      for incdir in incpath:
+        if os.path.isfile(os.path.join(incdir, recipe + '.py')):
+          recipe = os.path.join(incdir,recipe + '.py')
+          break
     with open(recipe, 'r') as fp:
       txt = fp.read()
     sys.stderr.write(f'Running {recipe}\n')
@@ -72,18 +85,18 @@ def show_proxy(autocfg:bool, debug:bool = False) -> None:
 def main(argv:list[str]) -> None:
   cli = cmd_cli()
   args, script_args = cli.parse_known_args(argv)
-  
+
   if not args.cloud is None: scullery.defaults['cloud'] = args.cloud
-  
+
   if args.excmd is None:
     if len(args.recipe) != 1:
       sys.stderr.write('Must specify one recipe\n')
       sys.exit(0)
     if args.debug: scullery.api.http_logging(2)
-    run_recipe(args.recipe[0], script_args, args.autocfg)
+    run_recipe(args.recipe[0], script_args, args.autocfg, args.include)
   elif args.excmd == SHOWPROXY:
     show_proxy(args.autocfg, args.debug)
-    
+
 ###################################################################
 #
 # Main command line

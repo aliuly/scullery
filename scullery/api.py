@@ -3,7 +3,10 @@
 # API sessions
 #
 import json
+import os
+import platform
 import requests
+import shlex
 import subprocess
 import sys
 
@@ -24,6 +27,25 @@ def http_logging(level:int = 1) -> None:
   '''
   import http.client
   http.client.HTTPConnection.debuglevel = level
+
+if os.name == 'posix':
+  def token_shutdown(url:str, token:str) -> None:
+    os.system(shlex.join(['curl', '-k',
+                        '-H', f'X-Auth-Token: {token}',
+                        '-H', f'X-Subject-Token: {token}',
+                        '-X', 'DELETE',
+                        url]))
+else:
+  def token_shutdown(url:str, token:str) -> None:
+    try:
+      rc = subprocess.run(['curl', '-k',
+                        '-H', f'X-Auth-Token: {token}',
+                        '-H', f'X-Subject-Token: {token}',
+                        '-X', 'DELETE',
+                        url])
+      if rc.returncode != 0: sys.stderr.write(f'Exit code: {rc.returncode}\n')
+    except Exception as e:
+      sys.stderr.write(str(e)+'\n')
 
 class ApiSession:
   IAM_HOST = 'iam.{region}.otc.t-systems.com'
@@ -74,16 +96,7 @@ class ApiSession:
     if not self.token is None:
       if sys.meta_path is None:
         sys.stderr.write('Deleting session while Python is shutting down\n')
-        try:
-          rc = subprocess.run(['curl', '-k',
-                        '-H', f'X-Auth-Token: {self.token}',
-                        '-H', f'X-Subject-Token: {self.token}',
-                        '-X', 'DELETE',
-                        self.tokens_api_path()])
-          if rc.returncode != 0: sys.stderr.write(f'Exit code: {rc.returncode}\n')
-        except Exception as e:
-          sys.stderr.write(str(e)+'\n')
-        
+        token_shutdown(self.tokens_api_path(), self.token)
       else:
         response = requests.delete(self.tokens_api_path(), headers = {
             'X-Auth-Token': self.token,

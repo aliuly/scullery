@@ -2,10 +2,19 @@
 # Roles recipe
 #
 import json
+import sys
+import yaml
 
 from scullery import cloud
 
-kermit_role = 'ACME-kermit-operator'
+# ~ kermit_role = 'ACME-kermit-operator'
+    # ~ [
+          # ~ { 'Action': ['ecs:*:get*',
+                        # ~ 'ecs:*:list*',
+                        # ~ 'ecs:*:stop*',
+                        # ~ 'ecs:*:start*',
+                        # ~ 'ecs:*:reboot*'],
+             # ~ 'Effect': 'Allow'}])
 
 def dump_roles(roles):
   for role in roles:
@@ -29,17 +38,21 @@ def run(argv:list[str]) -> None:
       role = cc.iam.get_role(role_name)
       print(json.dumps(role, indent=2))
   elif argv[0] == 'add' or argv[0] == 'create' or argv[0] == 'new':
-    new_role = cc.iam.new_role(display_name = kermit_role, policy = [
-          { 'Action': ['ecs:*:get*',
-                        'ecs:*:list*',
-                        'ecs:*:stop*',
-                        'ecs:*:start*',
-                        'ecs:*:reboot*'],
-             'Effect': 'Allow'}])
+    if len(argv) == 2:
+      # Read from stdin
+      print('Enter policy rules')
+      policies = yaml.safe_load(sys.stdin)
+    elif len(argv) == 3:
+      with open(argv[2],'r') as fp:
+        policies = yaml.safe_load(fp)
+    else:
+      print('Usage: scullery roles add <role-name> [yaml-data]')
+      exit(1)
+    new_role = cc.iam.new_role(display_name = argv[1], policy = policies)
     print(json.dumps(new_role, indent=2))
   elif argv[0] == 'del' or argv[0] == 'rm' or argv[0] == 'remove':
     try:
-      role = cc.iam.get_role(kermit_role)
+      role = cc.iam.get_role(argv[1])
       print(role)
       cc.iam.del_role(role['id'])
     except KeyError:
@@ -51,5 +64,5 @@ def run(argv:list[str]) -> None:
     print('get role : get details for role')
     print('add : add kermit role')
     print('del : del kermit role')
-    
+
 

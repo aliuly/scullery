@@ -62,7 +62,7 @@ class Iam:
     if resp.status_code != 201 or not 'role' in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['role']
-    
+
   def del_role(self, role_id:str) -> None:
     resp = self.session.delete(self.api_path(f'v3.0/OS-ROLE/roles/{role_id}'))
     if not resp.status_code in [200, 204]:
@@ -74,6 +74,20 @@ class Iam:
     if resp.status_code != 200 or not 'groups' in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['groups']
+
+  def group_users(self, grpid:str) -> list:
+    resp = self.session.get(self.api_path(f'v3/groups/{grpid}/users'))
+    if resp.status_code != 200 or not 'users' in resp.json():
+      raise RuntimeError(resp.text)
+    return resp.json()['users']
+
+  def new_group(self, name:str, description:str|None = None) -> str:
+    payload = { 'name': name }
+    if not description is None: payload['description'] = description
+    resp = self.session.post(self.api_path('v3/groups'), json=dict(group=payload))
+    if resp.status_code != 201 or not 'group' in resp.json():
+      raise RuntimeError(resp.text)
+    return resp.json()['group']['id']
 
   def get_domain_group_perms(self, domid:str, grpid:str) -> list:
     path = f'v3/domains/{domid}/groups/{grpid}/roles'
@@ -158,7 +172,7 @@ if __name__ == '__main__':
     # ~ print('{name:16} {type} {display_name}: {description}'.format(**perm))
     # ~ # ic(perm)
 
-  
+
   # TODO:
   # Add domain permissions: https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/permission_management/granting_permissions_to_a_user_group_of_a_domain.html
   # Add project permissions: https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/permission_management/granting_permissions_to_a_user_group_corresponding_to_a_project.html
