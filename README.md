@@ -3,19 +3,7 @@ Utility for executing Cloud related recipes
 
 ## TODO
 
-- Add directive:
-  #putenv key=value
-  #enable http debug
-  #disable http debug
-- make thin OTC API
-- APIS
-  - TMS
-  - IAM
-  - kurotc ops
+- List resources
+  - https://docs.otc.t-systems.com/resource-management-service/api-ref/apis/resource_query/querying_all_resources_under_your_account.html
+- kurotc ops
 
-# demo seq
-0. create custom roles (ACME-kermit)
-0. create predefined tags (optional)
-1. create project
-2. create user groups (admin, guest, kermit) ... assign roles
-3. create user, assign to group

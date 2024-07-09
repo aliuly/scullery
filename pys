@@ -11,7 +11,7 @@ sh "$mydir/setup.sh"
 . "$venv"/bin/activate
 
 if type "$1" >/dev/null 2>&1 ; then
-  exec "$@"
+  "$@"
 else
   exec python3 "$@"
 fi
