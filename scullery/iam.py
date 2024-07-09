@@ -75,6 +75,22 @@ class Iam:
       raise RuntimeError(resp.text)
     return resp.json()['users']
 
+  def user_groups(self, usrid:str) -> list:
+    resp = self.session.get(self.api_path(f'v3/users/{usrid}/groups'))
+    if resp.status_code != 200 or not 'groups' in resp.json():
+      raise RuntimeError(resp.text)
+    return resp.json()['groups']
+
+  def new_user(self, **kwargs) -> list:
+    resp = self.session.post(self.api_path('v3.0/OS-USER/users'), json = { 'user': kwargs })
+    if resp.status_code != 201 or not 'user' in resp.json():
+      raise RuntimeError(resp.text)
+    return resp.json()['user']['id']
+
+  def del_user(self, usr_id:str) -> None:
+    resp = self.session.delete(self.api_path(f'v3/users/{usr_id}'))
+    if not resp.status_code in [200, 204]:
+      raise RuntimeError(resp.text if resp.text else resp.reason)
 
   def groups(self, name:str|None = None) -> list:
     params = dict() if name is None else { 'params': { 'name': name } }
