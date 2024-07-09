@@ -23,18 +23,22 @@ import scullery.rcp_groups as rcp_groups
 import scullery.rcp_projects as rcp_projects
 import scullery.rcp_roles as rcp_roles
 import scullery.rcp_tms as rcp_tms
+import scullery.rcp_users as rcp_users
 
 from scullery import cloud
 
 SHOWPROXY = 'showproxy'
 DISPATCH_TABLE = dict()
-DISPATCH_TABLE['tms'] = rcp_tms.run
-DISPATCH_TABLE['tag'] = rcp_tms.run
-DISPATCH_TABLE['role'] = rcp_roles.run
-DISPATCH_TABLE['project'] = rcp_projects.run
-DISPATCH_TABLE['prj'] = rcp_projects.run
-DISPATCH_TABLE['grp'] = rcp_groups.run
+
 DISPATCH_TABLE['group'] = rcp_groups.run
+DISPATCH_TABLE['grp'] = rcp_groups.run
+DISPATCH_TABLE['prj'] = rcp_projects.run
+DISPATCH_TABLE['project'] = rcp_projects.run
+DISPATCH_TABLE['role'] = rcp_roles.run
+DISPATCH_TABLE['tag'] = rcp_tms.run
+DISPATCH_TABLE['tms'] = rcp_tms.run
+DISPATCH_TABLE['user'] = rcp_users.run
+DISPATCH_TABLE['usr'] = rcp_users.run
 
 def cmd_cli():
   ''' Command Line Interface argument parser '''

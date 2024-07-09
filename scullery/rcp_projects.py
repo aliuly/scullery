@@ -11,7 +11,9 @@ def run(argv:list[str]) -> None:
 
   if len(argv) == 0:
     for p in cc.iam.projects():
-      print('{id} {name:22} {description}'.format(**p))
+      details = cc.iam.get_project_details(p['id'])
+      print('{id} {name:22} {status:8} {description}'.format(**details))
+      # ~ print(json.dumps(details, indent=2))
   elif argv[0] == 'get':
     grps = cc.iam.groups()
     prjlst = cc.iam.projects(name=argv[1])
@@ -92,7 +94,7 @@ def run(argv:list[str]) -> None:
     grp_id = q[0]['id']
     q = cc.iam.get_role(role)
     role_id = q['id']
-    
+
     print('role',role, role_id)
     print('group',group, grp_id)
     print('project',project, prj_id)
@@ -131,13 +133,13 @@ def run(argv:list[str]) -> None:
     grp_id = q[0]['id']
     q = cc.iam.get_role(role)
     role_id = q['id']
-    
+
     print('role',role, role_id)
     print('group',group, grp_id)
     print('project',project, prj_id)
 
     cc.iam.revoke_project_group_perms(prj_id, grp_id, role_id)
-    
+
   else:
     print('Usage')
     print('default : list projects')
@@ -145,6 +147,6 @@ def run(argv:list[str]) -> None:
     print('add prjname description : add project')
     print('del prjname: del kermit project -- make sure all resources are deleted before using this')
     print('grant role on project to group : assign permissions')
-    
+
 
 

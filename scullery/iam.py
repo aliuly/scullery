@@ -68,6 +68,14 @@ class Iam:
     if not resp.status_code in [200, 204]:
       raise RuntimeError(resp.text if resp.text else resp.reason)
 
+  def users(self, name:str|None = None) -> list:
+    params = dict() if name is None else { 'params': { 'name': name } }
+    resp = self.session.get(self.api_path('v3/users'), **params)
+    if resp.status_code != 200 or not 'users' in resp.json():
+      raise RuntimeError(resp.text)
+    return resp.json()['users']
+
+
   def groups(self, name:str|None = None) -> list:
     params = dict() if name is None else { 'params': { 'name': name } }
     resp = self.session.get(self.api_path('v3/groups'), **params)

@@ -21,7 +21,7 @@ if len(argv) == 1 and argv[0] == 'create':
   q = cc.iam.projects(region_name)
   region = q[0]['id']
 
-  roles_dict = dict()  
+  roles_dict = dict()
   project = cc.iam.new_project(f'{region_name}_{project_name}', region, project_desc)
   print('Created project',project)
   for gp in groups:
@@ -31,15 +31,42 @@ if len(argv) == 1 and argv[0] == 'create':
     # ~ print(json.dumps(roles_dict[grp_role],indent=2))
     role = roles_dict[grp_role]['id']
     # ~ print(role)
-    
+
     # Create a project group...
     group = cc.iam.new_group(f'{project_name}-{grp_basename}', f'{grp_basename} users for {region_name}_{project_name}')
     print('Created group',group)
     cc.iam.grant_project_group_perms(project, group, role)
     print('Authorized',project,group, role)
-  
+
 elif len(argv) == 1 and argv[0] == 'delete':
-  
+  q = cc.iam.projects(f'{region_name}_{project_name}')
+  if len(q) != 1:
+    sys.stderr.write('Project not found\n')
+    exit(5)
+  project = q[0]['id']
+
+  roles_dict = dict()
+  for gp in groups:
+    grp_basename, grp_role = gp
+    if not grp_role in roles_dict:
+      roles_dict[grp_role] = cc.iam.get_role(grp_role)
+    role = roles_dict[grp_role]['id']
+
+    q = cc.iam.groups(f'{project_name}-{grp_basename}')
+    if len(q) != 1:
+      sys.stderr.write(f'Missing group {project_name}-{grp_basename}\n')
+      continue
+    group = q[0]['id']
+
+    print('Revoking',project,group, role)
+    cc.iam.revoke_project_group_perms(project, group, role)
+
+    print('Delete',group)
+    cc.iam.del_group(group)
+
+  print('Delprj',project)
+  cc.iam.del_project(project)
+
   ...
 else:
   print("Usage")
