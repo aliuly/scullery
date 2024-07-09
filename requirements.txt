@@ -1,19 +1,5 @@
 #
 # Requirements
 #
-# Removed these as the APIs I want to use are not properly
-# implemented in the python SDK
-# --only-binary=netifaces
-# python-openstackclient
-# otcextensions
-
-# doc generation
-docutils
-sphinx
-myst-parser
-sphinx-autodoc2
-sphinx-argparse
-
-# crypt
-cryptography
-passlib
+pyyaml
+requests
