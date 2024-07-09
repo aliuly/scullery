@@ -8,6 +8,7 @@ import json
 from scullery import cloud
 
 def run(argv:list[str]) -> None:
+  '''Manage groups (verbs: <none>, get, add, del)'''
   cc = cloud()
 
   if len(argv) == 0:
@@ -20,10 +21,12 @@ def run(argv:list[str]) -> None:
         print('{group_name} not matched')
         continue
       group = group[0]
-      print('id:    {id}\n name: {name}\n desc: {description}\n users:'.format(**group))
+      print('id:    {id}\n name: {name}\n desc: {description}'.format(**group))
       users = cc.iam.group_users(group['id'])
-      for u in users:
-        print('   {name}: {description}'.format(**u))
+      if len(users) > 0:
+        print(' users;')
+        for u in users:
+          print('   {name}: {description}'.format(**u))
   elif argv[0] == 'add' or argv[0] == 'create' or argv[0] == 'new':
     if len(argv) >= 2:
       grpname = argv[1]

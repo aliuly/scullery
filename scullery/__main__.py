@@ -15,7 +15,6 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 if '__file__' in globals():
   sys.path.append(os.path.join(os.path.dirname(__file__),'..'))
 
-
 import scullery
 import scullery.proxycfg as proxycfg
 
@@ -28,6 +27,7 @@ import scullery.rcp_users as rcp_users
 from scullery import cloud
 
 SHOWPROXY = 'showproxy'
+BUILTINS = 'builtins'
 DISPATCH_TABLE = dict()
 
 DISPATCH_TABLE['group'] = rcp_groups.run
@@ -54,8 +54,10 @@ def cmd_cli():
   grp1 = cli.add_argument_group('Sub command options')
   grp1.add_argument('--showproxy', help = 'Show proxy configuration',
                   dest = 'excmd', action='store_const', const = SHOWPROXY)
+  grp1.add_argument('--built-ins', help = 'List built-in recipes',
+                  dest = 'excmd', action='store_const', const = BUILTINS)
 
-  cli.add_argument('recipe', help='Recipe(s) to run', nargs=1)
+  cli.add_argument('recipe', help='Recipe(s) to run', nargs='?')
   return cli
 
 def run_recipe(recipe:str, argv:list[str], autocfg:bool = False, incpath:list[str] = []) -> None:
@@ -93,13 +95,32 @@ def main(argv:list[str]) -> None:
   if not args.cloud is None: scullery.defaults['cloud'] = args.cloud
 
   if args.excmd is None:
-    if len(args.recipe) != 1:
+    ic(args)
+    if args.recipe is None:
       sys.stderr.write('Must specify one recipe\n')
       sys.exit(0)
     if args.debug: scullery.api.http_logging(2)
-    run_recipe(args.recipe[0], script_args, args.autocfg, args.include)
+    run_recipe(args.recipe, script_args, args.autocfg, args.include)
   elif args.excmd == SHOWPROXY:
     show_proxy(args.autocfg, args.debug)
+  elif args.excmd == BUILTINS:
+    print('Built-in recipes')
+    rcp_table = {}
+    for name,callback in DISPATCH_TABLE.items():
+      cbstr = str(callback)
+      if not cbstr in rcp_table:
+        rcp_table[cbstr] = {
+          'recipe': [ name ],
+          'help': callback.__doc__
+        }
+      else:
+        rcp_table[cbstr]['recipe'].append(name)
+    for t in rcp_table.values():
+      if t['help'] is None:
+        print(' - {}'.format(', '.join(t['recipe'])))
+      else:
+        print(' - {}: {}'.format(', '.join(t['recipe']), t['help']))
+    
 
 ###################################################################
 #

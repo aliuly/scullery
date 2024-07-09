@@ -26,6 +26,7 @@ def dump_roles(roles):
     print('{name:16} {type} {display_name:24} {description}'.format(**values))
 
 def run(argv:list[str]) -> None:
+  '''Manage roles (verbs: <none>, system, get, add, del)'''
   cc = cloud()
 
   if len(argv) == 0:

@@ -11,6 +11,7 @@ def kvp_split(kvp:str) -> tuple[str,str]:
   return kk,vv
 
 def run(argv:list[str]) -> None:
+  '''Tag management (verbs: <none>, add, del)'''
   cc = cloud()
 
   if len(argv) == 0:

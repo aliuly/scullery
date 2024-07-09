@@ -20,6 +20,7 @@ admin_group = f'{project_name}-admin'
 if len(argv) == 1 and argv[0] == 'create':
   q = cc.iam.projects(region_name)
   region = q[0]['id']
+  domain = q[0]['domain_id']
 
   roles_dict = dict()
   project = cc.iam.new_project(f'{region_name}_{project_name}', region, project_desc)
@@ -66,8 +67,6 @@ elif len(argv) == 1 and argv[0] == 'delete':
 
   print('Delprj',project)
   cc.iam.del_project(project)
-
-  ...
 else:
   print("Usage")
   print(f" create : create project {region_name}_{project_name}")

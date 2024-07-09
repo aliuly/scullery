@@ -7,6 +7,7 @@ import sys
 from scullery import cloud
 
 def run(argv:list[str]) -> None:
+  '''Manage projects (verbs: <none>, get, add, del, grank, revoke)'''
   cc = cloud()
 
   if len(argv) == 0:

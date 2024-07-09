@@ -2,6 +2,8 @@
 #
 # API sessions
 #
+import random
+import string
 
 try:
   from icecream import ic
@@ -118,6 +120,16 @@ class Iam:
     if not resp.status_code in [200, 204]:
       raise RuntimeError(resp.text if resp.text else resp.reason)
 
+  def add_group_user(self, grp_id:str, usr_id:str) -> None:
+    resp = self.session.put(self.api_path(f'v3/groups/{grp_id}/users/{usr_id}'))
+    if resp.status_code != 204:
+      raise RuntimeError(resp.text if resp.text else resp.reason)
+
+  def del_group_user(self, grp_id:str, usr_id:str) -> None:
+    resp = self.session.delete(self.api_path(f'v3/groups/{grp_id}/users/{usr_id}'))
+    if resp.status_code != 204:
+      raise RuntimeError(resp.text if resp.text else resp.reason)
+
   def get_domain_group_perms(self, domid:str, grpid:str) -> list:
     path = f'v3/domains/{domid}/groups/{grpid}/roles'
     resp = self.session.get(self.api_path(path))
@@ -169,6 +181,11 @@ class Iam:
     resp = self.session.delete(self.api_path(f'v3/projects/{prj_id}'))
     if not resp.status_code in [200, 204]:
       raise RuntimeError(resp.text if resp.text else resp.reason)
+
+  def gen_user_name(self, length = 8):
+    return ''.join(random.sample(string.ascii_lowercase*length,length))
+  def gen_user_password(self, length = 24):
+    return ''.join(random.sample((string.ascii_lowercase + string.ascii_uppercase + string.digits)*length, length))
 
 if __name__ == '__main__':
   import api
