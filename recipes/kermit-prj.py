@@ -14,6 +14,13 @@ groups = [
   [ 'admin', 'te_admin' ],
   [ 'kermit', 'ACME-kermit-jump' ],
 ]
+# TODO create one admin user
+# TODO save to a Tofu credentials file
+# TODO move it to a built-in recipe that accepts a config file
+# TODO when deleting
+# TODO save users in groups
+# TODO after groups are deleted, delete users that are not in any groups
+
 
 admin_group = f'{project_name}-admin'
 
