@@ -290,7 +290,7 @@ class Iam:
       q = self.domains()
       for d in q:
         if d['name'] == self.session.domain_name: return d['id']
-      return q[0]['id']
+      if len(q) > 0: return q[0]['id']
     q = self.projects(context)
     if len(q) == 0: raise KeyError(f'Unable to match "{context}"')
     return q[0]['domain_id']
@@ -346,7 +346,7 @@ class Iam:
     if resp.status_code != 204:
       raise RuntimeError(resp.text if resp.text else resp.reason)
   def revoke_project_group_perms(self, prjid:str, grpid:str, roleid:str):
-    '''Revoe a role on project from a group
+    '''Revoke a role on project from a group
 
     :param prjid: Project ID
     :param grpid: Group ID
