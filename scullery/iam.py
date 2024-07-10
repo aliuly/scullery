@@ -87,7 +87,8 @@ class Iam:
     :param description: Role description
     :raises RuntimeError: on error
 
-    Will define a custom role.  See https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/custom_policy_management/creating_a_custom_policy.html
+    Will define a custom role.  See
+    [REST API](https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/custom_policy_management/creating_a_custom_policy.html)
 
     The policy specifcation can be specified as a `dict`, which then needs
     to contain:
@@ -173,7 +174,8 @@ class Iam:
     :returns: ID of created user
     :raises RuntimeError: on error
 
-    Creates a new IAM user using https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/user_management/creating_an_iam_user_recommended.html
+    Creates a new IAM user using
+    [REST API](https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/user_management/creating_an_iam_user_recommended.html)
 
     Note that the paramaters `xuser_id` and `xuser_type` are available
     but this API does not implement them.

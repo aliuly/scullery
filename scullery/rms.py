@@ -30,7 +30,7 @@ class Rms:
     :param match: If specified, it will only return projects/region matching
     :param typestr: Specify a provider.type to select
 
-    See: https://docs.otc.t-systems.com/resource-management-service/api-ref/apis/resource_query/querying_all_resources_under_your_account.html
+    See: [Resource Management](https://docs.otc.t-systems.com/resource-management-service/api-ref/apis/resource_query/querying_all_resources_under_your_account.html)
     '''
     params = {
       'limit': 199
