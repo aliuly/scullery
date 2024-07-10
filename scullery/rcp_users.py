@@ -28,19 +28,12 @@ def run(argv:list[str]) -> None:
         for g in q:
           print('  {name} {description}'.format(**g))
   elif argv[0] == 'add' or argv[0] == 'create' or argv[0] == 'new':
-    domain_id = None
-    for p in cc.iam.projects():
-      domain_id = p['domain_id']
-      break
-    if domain_id is None:
-      print('Unable to find a suitable domain ID')
-      exit(1)
-
+    domain_id = cc.iam.domain()
     groups = {}
     new_user = {
         'pwd_status': False,
         'domain_id': domain_id,
-        'description': 'user created via API',
+        'description': 'user created with scullery',
     }
     for opt in argv[1:]:
       found = False

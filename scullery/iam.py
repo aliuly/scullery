@@ -130,6 +130,23 @@ class Iam:
     if resp.status_code != 204:
       raise RuntimeError(resp.text if resp.text else resp.reason)
 
+  def domain(self, context:str|None = None) -> str:
+    '''Get the domain for a given project/region/or user default'''
+    if context is None:
+      q = self.domains()
+      for d in q:
+        if d['name'] == self.session.domain_name: return d['id']
+      return q[0]['id']
+    q = self.projects(context)
+    if len(q) == 0: raise KeyError(f'Unable to match "{context}"')
+    return q[0]['domain_id']
+
+  def domains(self) -> list:
+    resp = self.session.get(self.api_path('v3/auth/domains'))
+    if resp.status_code != 200 or not 'domains' in resp.json():
+      raise RuntimeError(resp.text)
+    return resp.json()['domains']
+
   def get_domain_group_perms(self, domid:str, grpid:str) -> list:
     path = f'v3/domains/{domid}/groups/{grpid}/roles'
     resp = self.session.get(self.api_path(path))
@@ -194,24 +211,6 @@ if __name__ == '__main__':
   api = api.ApiSession(cfg)
 
 
-  # ~ de_id = api.iam.projects(name = 'eu-de')[0]['id']
-  # ~ new_id = api.iam.new_project(name = 'eu-de_onetwo', parent_id = de_id, description = 'Test project')
-  # ~ prj_dat = api.iam.get_project_details(new_id)
-  # ~ ic(prj_dat)
-
-  # ~ api.iam.del_project(prj_id = new_id)
-
-  # ~ prj_id = None
-  # ~ for prj in api.iam.projects():
-    # ~ print('{id} {name}'.format(**prj))
-    # ~ if '_' in prj['name']: prj_id = prj['id']
-    # ~ # ic(prj)
-  # ~ if not prj_id is None:
-    # ~ prj_dat = api.iam.get_project_details(prj_id)
-    # ~ ic(prj_dat)
-  # ~ print('=')
-  # ~ for prj in api.iam.projects(name = 'eu-de_training2407'):
-    # ~ ic(prj)
 
   # ~ for grp in api.iam.groups():
     # ~ print('{id} {name:24} {description}'.format(**grp))
@@ -226,17 +225,6 @@ if __name__ == '__main__':
   # ~ for perm in api.iam.get_project_group_perms(prjdat['id'],grpdat['id']):
     # ~ print('{name:16} {type} {display_name}: {description}'.format(**perm))
     # ~ # ic(perm)
-
-
-  # TODO:
-  # Add domain permissions: https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/permission_management/granting_permissions_to_a_user_group_of_a_domain.html
-  # Add project permissions: https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/permission_management/granting_permissions_to_a_user_group_corresponding_to_a_project.html
-  # Add user to group: https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/user_group_management/adding_a_user_to_a_user_group.html
-  # Remove user from group? https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/user_management/deleting_a_user_from_a_user_group.html
-  # User operations:
-  #   list users: https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/user_management/querying_a_user_list.html#en-us-topic-0057845638
-  #   new user: https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/user_management/creating_a_user.html
-  #   del user: https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/user_management/deleting_a_user.html
 
 
   del(api)

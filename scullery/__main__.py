@@ -20,9 +20,11 @@ import scullery.proxycfg as proxycfg
 
 import scullery.rcp_groups as rcp_groups
 import scullery.rcp_projects as rcp_projects
+import scullery.rcp_rms as rcp_rms
 import scullery.rcp_roles as rcp_roles
 import scullery.rcp_tms as rcp_tms
 import scullery.rcp_users as rcp_users
+
 
 from scullery import cloud
 
@@ -34,6 +36,7 @@ DISPATCH_TABLE['group'] = rcp_groups.run
 DISPATCH_TABLE['grp'] = rcp_groups.run
 DISPATCH_TABLE['prj'] = rcp_projects.run
 DISPATCH_TABLE['project'] = rcp_projects.run
+DISPATCH_TABLE['rms'] = rcp_rms.run
 DISPATCH_TABLE['role'] = rcp_roles.run
 DISPATCH_TABLE['tag'] = rcp_tms.run
 DISPATCH_TABLE['tms'] = rcp_tms.run
@@ -120,7 +123,7 @@ def main(argv:list[str]) -> None:
         print(' - {}'.format(', '.join(t['recipe'])))
       else:
         print(' - {}: {}'.format(', '.join(t['recipe']), t['help']))
-    
+
 
 ###################################################################
 #

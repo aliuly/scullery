@@ -17,6 +17,7 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 
 import iam
 import tms
+import rms
 
 from creds import STR as CRSTR
 
@@ -72,6 +73,7 @@ class ApiSession:
           },
         },
       }
+
     if '_' in creds[CRSTR.PROJECT_NAME]:
       # We need to scope the token
       self.region = creds[CRSTR.PROJECT_NAME].split('_',1)[0]
@@ -80,8 +82,12 @@ class ApiSession:
           'name': creds[CRSTR.PROJECT_NAME]
         }
       }
+      self.project_name = creds[CRSTR.PROJECT_NAME]
     else:
       self.region = creds[CRSTR.PROJECT_NAME]
+      self.project_name = None
+    self.user_name = creds[CRSTR.USERNAME]
+    self.domain_name = creds[CRSTR.USER_DOMAIN_NAME]
 
     response = requests.post(self.tokens_api_path(), json = jsdat)
     if response.status_code != 201 or not 'X-Subject-Token' in response.headers:
@@ -91,6 +97,7 @@ class ApiSession:
     self.token = response.headers['X-Subject-Token']
     self.iam = iam.Iam(self)
     self.tms = tms.Tms(self)
+    self.rms = rms.Rms(self)
 
   def __del__(self) -> None:
     if not self.token is None:
