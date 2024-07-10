@@ -1,0 +1,14 @@
+#
+# Sample role definition
+#
+# Load with:
+#
+#   scull role add _role_name_ file.yaml
+#
+- Action:
+  - 'ecs:*:get*'
+  - 'ecs:*:list*'
+  - 'ecs:*:stop*'
+  - 'ecs:*:start*'
+  - 'ecs:*:reboot*'
+  Effect: Allow
