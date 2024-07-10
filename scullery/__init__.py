@@ -32,12 +32,17 @@ clouds = {}
 defaults = {
   'cloud': None,
 }
-
+'''Default options'''
 #
 # Support functions
 #
 def cloud(cloud_name:str = '', **kwargs) -> api.ApiSession:
-  '''Return connections to clouds'''
+  '''Return connections to clouds
+
+  :param cloud_name: Cloud to configure
+  :param **kwargs: optional credentials to use
+  :returns: An API session
+  '''
 
   if not cloud_name in clouds:
     fopts = dict(kwargs)
@@ -52,6 +57,7 @@ def cloud(cloud_name:str = '', **kwargs) -> api.ApiSession:
   return clouds[cloud_name]
 
 def clean_up()->None:
+  '''Clean-up all connections'''
   keys = list(clouds.keys())
   for k in keys:
     del clouds[k]

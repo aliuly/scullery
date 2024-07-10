@@ -23,6 +23,7 @@ class STR:
   CLOUDS = 'clouds'
   AUTH = 'auth'
 
+  CLOUD_NAME = 'cloud_name'
   USER_DOMAIN_NAME = 'user_domain_name'
   USERNAME = 'username'
   PASSWORD = 'password'
@@ -35,9 +36,9 @@ attributes = [
   STR.USERNAME,
   STR.PASSWORD,
   STR.PROJECT_NAME,
+  STR.CLOUD_NAME,
 ]
 '''List of params needed to authenticate'''
-
 
 def get_env_creds() -> dict:
   '''Configure credentials from environment variables
@@ -98,10 +99,12 @@ def creds(cloud_name:str|None = None, **kwargs) -> dict:
     else:
       if not (cloud_name in ydat[STR.CLOUDS] and STR.AUTH in ydat[STR.CLOUDS][cloud_name]): continue
       kwargs = ydat[STR.CLOUDS][cloud_name][STR.AUTH]
+      kwargs[STR.CLOUD_NAME] = cloud_name
 
     # If no project_name but there is a region_name, use that...
     if not STR.PROJECT_NAME in kwargs and STR.REGION_NAME in ydat[STR.CLOUDS][tmp_name]:
-        kwargs[STR.PROJECT_NAME] = ydat[STR.CLOUDS][tmp_name][STR.REGION_NAME]
+      kwargs[STR.PROJECT_NAME] = ydat[STR.CLOUDS][tmp_name][STR.REGION_NAME]
+      kwargs[STR.CLOUD_NAME] = tmp_name
     if kwargs is None: continue
 
     if os.path.basename(cfgfile) == STR.CLOUDS_YAML:

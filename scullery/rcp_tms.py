@@ -1,3 +1,6 @@
+'''
+Tag related recipes
+'''
 #
 # TMS recipes
 #
@@ -5,6 +8,11 @@ from scullery import cloud
 
 
 def kvp_split(kvp:str) -> tuple[str,str]:
+  '''INTERNAL: split key value pairs
+
+  :param kvp: key value pair as a string of the form `key=value`
+  :returns: a tuple split into key and value.
+  '''
   kk, vv = kvp.split('=',1)
   kk = kk.strip()
   vv = vv.strip()

@@ -1,10 +1,12 @@
 #
 # RMS recipes
 #
+'''Resource management implementation'''
+
 from scullery import cloud
 
 def run(argv:list[str]) -> None:
-  '''Resource management'''
+  '''Resource management (specify a project to limit list)'''
   cc = cloud()
 
   if len(argv) == 0:

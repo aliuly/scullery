@@ -1,7 +1,11 @@
+'''
+Implement user related recipes
+'''
 #
 # Roles recipe
 #
 import json
+import os
 import sys
 
 from scullery import cloud
@@ -13,7 +17,7 @@ def run(argv:list[str]) -> None:
   if len(argv) == 0:
     for u in cc.iam.users():
       if not 'description' in u: u['description'] = ''
-      print('{name} {description} {email} {domain_id}'.format(**u))
+      print('{name} {description} {email}'.format(**u))
   elif argv[0] == 'get':
     for user_name in argv[1:]:
       users = cc.iam.users(user_name)
@@ -33,7 +37,7 @@ def run(argv:list[str]) -> None:
     new_user = {
         'pwd_status': False,
         'domain_id': domain_id,
-        'description': 'user created with scullery',
+        'description': f'user created by {os.getlogin()} using scullery',
     }
     for opt in argv[1:]:
       found = False

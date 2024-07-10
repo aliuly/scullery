@@ -1,7 +1,9 @@
 #
-# Roles recipe
+# Project recipe
 #
+'''Project recipes'''
 import json
+import os
 import sys
 
 from scullery import cloud
@@ -40,7 +42,7 @@ def run(argv:list[str]) -> None:
     print(len(argv))
     if len(argv) >= 2:
       prjname = argv[1]
-      desc = None if len(argv) == 2 else argv[2]
+      desc = f'Project created by {os.getlogin()} using scullery' if len(argv) == 2 else argv[2]
       if not '_' in prjname:
         print('No region specified')
         return
@@ -60,6 +62,12 @@ def run(argv:list[str]) -> None:
       if len(prjdat) != 1:
         print('Unable to find project')
         return
+      res = cc.rms.resources(argv[1])
+      if len(res) > 0:
+        print(f'Warning: Project {argv[1]} has {len(res)} active resources')
+        if not '--force' in argv:
+          print('Use --force option to continue regardless')
+          return
       cc.iam.del_project(prjdat[0]['id'])
     except KeyError:
       print('Project already deleted')

@@ -82,6 +82,8 @@ def proxy_cfg(debug=False):
 
 
 def autocfg_vars():
+  '''Print the output of proxy autoconfiguration'''
+
   proxy, url, jstext = proxy_auto_cfg()
 
   if url: print(f'REM AutoConfigURL: {url}')

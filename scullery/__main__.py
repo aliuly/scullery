@@ -19,6 +19,7 @@ import scullery
 import scullery.proxycfg as proxycfg
 
 import scullery.rcp_groups as rcp_groups
+import scullery.rcp_kermit as rcp_kermit
 import scullery.rcp_projects as rcp_projects
 import scullery.rcp_rms as rcp_rms
 import scullery.rcp_roles as rcp_roles
@@ -31,9 +32,11 @@ from scullery import cloud
 SHOWPROXY = 'showproxy'
 BUILTINS = 'builtins'
 DISPATCH_TABLE = dict()
+'''Command dispatch table'''
 
 DISPATCH_TABLE['group'] = rcp_groups.run
 DISPATCH_TABLE['grp'] = rcp_groups.run
+DISPATCH_TABLE['kermit'] = rcp_kermit.run
 DISPATCH_TABLE['prj'] = rcp_projects.run
 DISPATCH_TABLE['project'] = rcp_projects.run
 DISPATCH_TABLE['rms'] = rcp_rms.run
@@ -64,6 +67,13 @@ def cmd_cli():
   return cli
 
 def run_recipe(recipe:str, argv:list[str], autocfg:bool = False, incpath:list[str] = []) -> None:
+  '''Run a recipe
+
+  :param recipe: Recipe to run
+  :param argv: commandline arguments
+  :param autocfg: Automatic proxy configuration
+  :param incpath: Include path for searching recipes
+  '''
   if autocfg: proxycfg.proxy_cfg()
 
   if recipe in DISPATCH_TABLE:
@@ -81,6 +91,11 @@ def run_recipe(recipe:str, argv:list[str], autocfg:bool = False, incpath:list[st
   scullery.clean_up()
 
 def show_proxy(autocfg:bool, debug:bool = False) -> None:
+  '''Handle show proxy sub-command
+
+  :param autocfg: Perform auto configuration
+  :param debug: Show extra details
+  '''
   if autocfg:
     proxy, url, jstext = proxycfg.proxy_auto_cfg()
     print(f'Auto config URL: {url}')
@@ -92,6 +107,10 @@ def show_proxy(autocfg:bool, debug:bool = False) -> None:
     if 'https_proxy' in os.environ: print('https_proxy: {https_proxy}'.format(https_proxy=os.environ['https_proxy']))
 
 def main(argv:list[str]) -> None:
+  '''Main script entry point
+
+  :param argv: Command line arguments
+  '''
   cli = cmd_cli()
   args, script_args = cli.parse_known_args(argv)
 

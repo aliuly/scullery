@@ -1,3 +1,9 @@
+'''
+Resource management service implementation
+
+Used to list resources accross an account
+'''
+
 try:
   from icecream import ic
 except ImportError:  # Graceful fallback if IceCream isn't installed.
@@ -5,13 +11,17 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 
 
 class Rms:
+  '''Resource management'''
   API_HOST = 'rms.{region}.otc.t-systems.com'
+  '''API end-point'''
 
   def api_path(self, path):
+    '''API URL'''
     host = Rms.API_HOST.format(region = self.session.region)
     return f'https://{host}/{path}'
 
   def __init__(self, session) -> None:
+    '''Constructor'''
     self.session = session
 
   def resources(self, match:str|None = None, typestr:str|None = None) -> list:
@@ -26,7 +36,6 @@ class Rms:
       'limit': 199
     }
     if not typestr is None: params['type'] = typestr
-
 
     domain_id = self.session.iam.domain(match)
     if not match is None:

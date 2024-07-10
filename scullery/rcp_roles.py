@@ -1,7 +1,10 @@
 #
 # Roles recipe
 #
+''' Implement role recipes '''
+
 import json
+import os
 import sys
 import yaml
 
@@ -16,7 +19,11 @@ from scullery import cloud
                         # ~ 'ecs:*:reboot*'],
              # ~ 'Effect': 'Allow'}])
 
-def dump_roles(roles):
+def dump_roles(roles:list) -> None:
+  '''INTERNAL: print role details
+
+  :param roles: List of roles to primt
+  '''
   for role in roles:
     values = {
       'description': '',
@@ -52,7 +59,8 @@ def run(argv:list[str]) -> None:
     else:
       print('Usage: scullery roles add <role-name> [yaml-data]')
       exit(1)
-    new_role = cc.iam.new_role(display_name = argv[1], policy = policies)
+    new_role = cc.iam.new_role(display_name = argv[1], policy = policies,
+              description = f'Role created by {os.getlogin()} using scullery' )
     print(json.dumps(new_role, indent=2))
   elif argv[0] == 'del' or argv[0] == 'rm' or argv[0] == 'remove':
     try:
