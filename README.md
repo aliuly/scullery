@@ -7,4 +7,6 @@ Most of the recipes in scullery require admin access.
 ## TODO
 
 - kurotc ops -- shouldn't require admin access
+- write terraform creds file
+
 
