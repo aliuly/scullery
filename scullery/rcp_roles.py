@@ -1,7 +1,66 @@
 #
 # Roles recipe
 #
-''' Implement role recipes '''
+'''
+## Role recipes
+
+Implements role recipes.
+
+## list roles
+
+List custom roles
+
+```bash
+scullery role
+```
+## list SYSTEM roles
+
+List system roles.  These roles are built-in into the cloud infrastructure.
+
+```bash
+scullery role system
+```
+
+## get role details
+
+Get the role details.
+
+```bash
+scullery role get role_name
+```
+## add custom role
+
+Create a new custom role
+
+```bash
+scullery role add role_name [yaml_file]
+```
+Create a role using a `yaml_file`.  If no `yaml_file` is specified
+it will read definition from `stdin`.
+
+Example YAML:
+
+```yaml
+- Action:
+  - 'ecs:*:get*'
+  - 'ecs:*:list*'
+  - 'ecs:*:stop*'
+  - 'ecs:*:start*'
+  - 'ecs:*:reboot*'
+  Effect: Allow
+```
+
+See {py:obj}`scullery.iam.Iam.new_role` for more details.
+
+## delete custom role
+
+Delete a custom role
+
+```bash
+scullery role del role_name
+```
+***
+'''
 
 import json
 import os

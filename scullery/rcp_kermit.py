@@ -1,7 +1,108 @@
 #
 # Kermit recipes
 #
-'''Kermit recipe implementations'''
+'''
+## Kermit recipe implementations
+
+Used to set-up and dismantle project environments.
+
+## set-up
+
+Setting up a project will:
+
+1. create project to scope the work
+2. create groups and assign them project related roles.  By default
+   it will create the following groups:
+   - admin : Full resource admin access
+   - guest : Read-only access
+3. create users for the created groups.  By default it will create
+   random users with random passwords.
+
+Additional users/credentials can be created using the `user` recipe and
+assigned to the created groups.
+
+If setting up a project using defaults you only need to use:
+
+```bash
+scullery kermit setup --defaults=region_project-name --output=info.yaml
+```
+
+If you want to tweak the project configuration you need to use a YAML
+file:
+
+```bash
+scullery kermit setup --spec=input.yaml --output=info.yaml
+```
+
+Example YAML file:
+
+```yaml
+# project is the only mandatory configuration item
+project: eu-de_testprj
+
+# Everything from here on is optional
+description: testprj description
+
+# If domain_id is not specified it will use one from the region
+# or the default for the logged-in user
+domain_id: '*change_me*'
+# If parent_id is not specified it will use the one from the region
+parent_id: '*change_me*'
+
+#
+# If groups section does not exist, a default set of groups will be
+# created
+#
+# Groups section contains a base group name, and the role that it
+# will be assigned
+#
+groups:
+  admin: te_admin
+  guest: readonly
+  ops: ACME-kermit-jump
+
+#
+# If the users section does not exists a users section will be
+# generated with one random user for each group defined earlier
+#
+# Users should contain a "User_name" and a "group_name" that the
+# user will be assigned to.
+users:
+  my_admin: admin
+  my_guest: guest
+
+#
+# The creds section is used to define initial password for newly
+# created users.
+#
+# It should contain mappings of "user: password"
+#
+# if a user defined in users does not have a matching password in
+# the creds section a random password will be assigned.
+#
+creds:
+  my_admin: change_Me123
+```
+
+## delete
+
+To delete a project:
+
+```bash
+scullery kermit del region_project-name [--force] [--execute]
+```
+This will delete all the set-up done by the `setup` option.
+
+This recipe will use the Resource Management service to check
+if there are no active resources associated with the project.
+If there are it will stop unless the `--force` option is used.
+
+By default, it will simply show on the screen the actions that
+will be implemented.  Use the `--execute` command to actually
+perform changes to the cloud.
+
+***
+'''
 
 import os
 import sys
@@ -12,8 +113,8 @@ from scullery import cloud
 def usage():
   '''Show recipe usage'''
   print('Usage')
-  print('  create --spec=file --output=file')
-  print('  del prj')
+  print('  setup --spec=file|--defaults=name --output=file')
+  print('  del prj [--force] [--execute]')
 
 def group_in_other_projects(cc, grp:dict, prjid:str, all_projects:list) -> bool:
   '''INTERNAL: Check if project is used elsewhere
@@ -44,24 +145,33 @@ def run(argv:list[str]) -> None:
 
   if len(argv) == 0:
     usage()
-  elif argv[0] == 'create':
+  elif argv[0] == 'setup' or argv[0] == 'create':
     spec_file = None
+    defaults = None
     out_file = None
     for opt in argv[1:]:
       if opt.startswith('--spec='):
         spec_file = opt[7:]
+      elif opt.startswith('--defaults='):
+        defaults = opt[11:]
       elif opt.startswith('--output='):
         out_file = opt[9:]
       else:
         sys.stderr.write(f'Unknown option {opt}\n')
         exit(6)
 
-    if spec_file is None:
-      print('Enter specification')
-      spec = yaml.safe_load(sys.stdin)
+    if defaults is None:
+      if spec_file is None:
+        print('Enter specification')
+        spec = yaml.safe_load(sys.stdin)
+      else:
+        with open(spec_file,'r') as fp:
+          spec = yaml.safe_load(fp)
     else:
-      with open(spec_file,'r') as fp:
-        spec = yaml.safe_load(fp)
+      if spec_file is not None:
+        print('Cannot specify "defaults" when --spec is used')
+        return
+      spec = { 'project': defaults }
 
     if not 'groups' in spec or len(spec['groups']) == 0:
       spec['groups'] = {
@@ -137,6 +247,14 @@ def run(argv:list[str]) -> None:
         print('Use --force option to continue regardless')
         return
 
+    dryrun  = True
+    if not '--execute' in argv:
+      print('In dry-run mode.  No changes will be made')
+      print('Use --execute option to execute changes')
+    else:
+      print('--execute option in use.  Changes will be made to infrastructure')
+      dryrun = False
+
     all_projects = cc.iam.projects()
     all_groups = cc.iam.groups()
 
@@ -174,16 +292,16 @@ def run(argv:list[str]) -> None:
     # ... delete groups
     for g in groups.values():
       print('Delete group',g['name'],g['id'])
-      cc.iam.del_group(g['id'])
+      if not dryrun: cc.iam.del_group(g['id'])
 
     # ... delete users
     for u in users.values():
       print('Delete user',u['name'],u['id'])
-      cc.iam.del_user(u['id'])
+      if not dryrun: cc.iam.del_user(u['id'])
 
     # ... delete project
     print('Delete project',prjid)
-    cc.iam.del_project(prjid)
+    if not dryrun: cc.iam.del_project(prjid)
 
   else:
     usage()
