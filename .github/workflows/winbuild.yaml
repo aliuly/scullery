@@ -21,7 +21,7 @@ jobs:
       - name: Tag versioning
         run: |
           python scripts/gitver.py
-          python scripts/gitver.py ypp/version.py
+          python scripts/gitver.py scullery/version.py
       - name: Install dependencies
         run: |
           .\setup.bat exe
