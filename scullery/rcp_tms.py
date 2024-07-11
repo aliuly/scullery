@@ -1,5 +1,33 @@
 '''
-Tag related recipes
+## Tag recipes
+
+These recipes are used to create and delete pre-defined tags.
+
+## list
+
+List currently pre-defined tags:
+
+```bash
+scullery tag
+```
+
+## add
+
+Define pre-defined tags
+
+```bash
+scullery tag add key=value project=one project=two
+```
+
+## del
+
+Delete pre-defined tags
+
+```bash
+scullery tag del key=value project=one project=two
+```
+
+***
 '''
 #
 # TMS recipes

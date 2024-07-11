@@ -1,7 +1,64 @@
 #
 # Project recipe
 #
-'''Project recipes'''
+'''
+## Project recipes
+
+## list projects
+
+Get a list of projects
+
+```bash
+scullery prj
+```
+
+## get project details
+
+Get details of a project
+
+```bash
+scullery prj get region_projectname
+```
+
+## add project
+
+Create a new project
+
+```bash
+scullery prj add region_projectname [description]
+```
+
+## del project region_projectname
+
+Delete an existing project
+
+```bash
+scullery prj del region_projectname [--force]
+```
+
+**NOTE** Project deleletion takes more than 30 minutes.
+
+This recipe will check using Resource Management that no
+active resources are assigned to this project.  Use `--force`
+to ignore.
+
+## grant permissions on project
+
+Grants a role to a group on a project
+
+```bash
+scullery prj grant rolename on region_projectname to groupname
+```
+
+## revoke permissions on project
+
+Revokes a role from a group on a project
+
+```bash
+scullery prj revoke rolename on region_projectname from groupname
+```
+***
+'''
 import json
 import os
 import sys
@@ -9,7 +66,7 @@ import sys
 from scullery import cloud
 
 def run(argv:list[str]) -> None:
-  '''Manage projects (verbs: <none>, get, add, del, grank, revoke)'''
+  '''Manage projects (verbs: <none>, get, add, del, grant, revoke)'''
   cc = cloud()
 
   if len(argv) == 0:

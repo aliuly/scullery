@@ -87,7 +87,8 @@ class Iam:
     :param description: Role description
     :raises RuntimeError: on error
 
-    Will define a custom role.  See https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/custom_policy_management/creating_a_custom_policy.html
+    Will define a custom role.  See
+    [REST API](https://docs.otc.t-systems.com/identity-access-management/api-ref/apis/custom_policy_management/creating_a_custom_policy.html).
 
     The policy specifcation can be specified as a `dict`, which then needs
     to contain:
