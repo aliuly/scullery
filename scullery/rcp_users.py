@@ -1,5 +1,77 @@
 '''
-Implement user related recipes
+## User recipes
+
+This module implements user related recipes.  The following
+verbs are recognized.
+
+## list users
+
+This will list cloud users.
+
+```bash
+scullery usr
+```
+
+## get
+
+Get user details for a given user:
+
+```bash
+scullery usr get username
+```
+
+## add
+
+Create user
+
+```bash
+scullery usr add [options]
+```
+
+Options:
+
+- `--name=username` : User's name, if not specified a random user name
+  will be generated.
+- `--password=text` : User's password.  If not specified a random
+  password will be generated.
+- `--email=address` : Default e-mail address for this user
+- `--desc=description` : Description for user
+- `--group=groupname` : Make the new user member of `groupname`.  This
+  option can be used multiple times.
+
+## del
+
+Delete user
+
+```bash
+scullery usr del username
+```
+
+## group
+
+Use this verb to modify the groups this user belongs to.
+
+### group add
+
+Make this user a member of a group
+
+```bash
+scullery usr groupname add username
+```
+
+This will make `username` a member of `groupname`.
+
+### group del
+
+Remove this user from a group
+
+```bash
+scullery usr groupname del username
+```
+
+This will remove `username` from `groupname`.
+
+***
 '''
 #
 # Roles recipe

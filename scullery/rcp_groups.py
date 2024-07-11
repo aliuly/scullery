@@ -1,7 +1,45 @@
 #
 # Group recipe
 #
-'''Group recipe implementations'''
+'''
+## Group recipes
+
+Group recipe implementations
+
+## list groups
+
+List groups
+
+```bash
+scullery grp
+```
+
+## get group details
+
+Get details related to a group.  This will show group definitions,
+assigned domain roles and member users.
+
+```bash
+scullery grp get groupname
+```
+
+## add group
+
+Create a new group
+
+```bash
+scullery grp add groupname [description]
+```
+
+## del group
+
+Delete a group
+
+```bash
+scullery grp del groupname
+```
+***
+'''
 
 import json
 import os
