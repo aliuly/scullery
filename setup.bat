@@ -30,8 +30,8 @@ call %VENV%\Scripts\activate.bat
 pip install %pipproxy% --requirement %~dp0%requirements.txt
 
 if "%1"=="exe" (
-  pip install %pipproxy% pyinstaller
+  pip install %pipproxy% "pyinstaller<6.9"
 ) else (
   pip install %pipproxy% icecream
-  pip install %pipproxy% pyinstaller
+  pip install %pipproxy% "pyinstaller<6"
 )

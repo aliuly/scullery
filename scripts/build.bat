@@ -1,6 +1,5 @@
 @echo off
 setlocal
-call %~dp0%..\vars.bat
 
 python %~dp0\findsitepkgs.py > %~dp0\sitedir.bat
 call %~dp0\sitedir.bat
