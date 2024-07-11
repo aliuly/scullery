@@ -76,10 +76,11 @@ clouds:
       user_domain_name: 'OTC00000000001000000xxx'
       username: '<USER_NAME>'
       password: '<PASSWORD>'
-      project_name: '<eu-de_project>'
+      # project_name: '<eu-de_project>'
       # or project_id: '<123456_PROJECT_ID>'
       # or user_domain_id: '<123456_DOMAIN_ID>'
       # auth_url: 'https://iam.eu-de.otc.t-systems.com:443/v3'
+    region_name: eu-de
     # interface: 'public'
     # identity_api_version: 3 # !Important
     # ak: '<AK_VALUE>' # AK/SK pair for access to OBS
@@ -90,6 +91,15 @@ AK/SK values required for access to some services (i.e. OBS) can
 be either configured as shown above in the `clouds.yaml`/`secure.yaml`,
 or they can be automatically retrieved from the `S3_ACCESS_KEY_ID`
 and `S3_SECRET_ACCESS_KEY` environment variables.
+
+You must specify either a `region_name` or a `project_name`.  If a
+`project_name` is specified the created token will be scoped within
+that project and will not have access to domain resources such as
+[IAM](https://docs.otc.t-systems.com/identity-access-management/index.html)
+or
+[RMS](https://docs.otc.t-systems.com/resource-management-service/index.html)
+services.
+
 
 ### Additional projects
 
@@ -108,7 +118,7 @@ clouds:
       # or project_id: '<123456_PROJECT_ID>'
       user_domain_name: 'OTC00000000001000000xxx'
       # or user_domain_id: '<123456_DOMAIN_ID>'
-      auth_url: 'https://iam.eu-de.otc.t-systems.com:443/v3'
+      # auth_url: 'https://iam.eu-de.otc.t-systems.com:443/v3'
     interface: 'public'
     identity_api_version: 3 # !Important
     ak: '<AK_VALUE>' # AK/SK pair for access to OBS
@@ -122,7 +132,7 @@ clouds:
       # or project_id: '<123456_PROJECT_ID2>'
       user_domain_name: 'OTC00000000001000000xxx'
       # or user_domain_id: '<123456_DOMAIN_ID2>'
-      auth_url: 'https://iam.eu-de.otc.t-systems.com:443/v3'
+      # auth_url: 'https://iam.eu-de.otc.t-systems.com:443/v3'
     interface: 'public'
     identity_api_version: 3 # !Important
     ak: '<AK_VALUE>' # AK/SK pair for access to OBS
