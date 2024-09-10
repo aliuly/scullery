@@ -1,3 +1,4 @@
+
 # scullery
 
 Utility for executing Cloud related recipes
@@ -8,5 +9,6 @@ Most of the recipes in scullery require admin access.
 
 - kurotc ops -- shouldn't require admin access
 - write terraform creds file
+- import OS images
 
 

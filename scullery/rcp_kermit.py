@@ -113,7 +113,10 @@ from scullery import cloud
 def usage():
   '''Show recipe usage'''
   print('Usage')
-  print('  setup --spec=file|--defaults=name --output=file')
+  print('  setup --spec=file [--output=file]')
+  print('     Creates a new project defined by the spec file')
+  print('  setup --defaults=name [--output=file]')
+  print('     Creates a new project named "name" with default settings')
   print('  del prj [--force] [--execute]')
 
 def group_in_other_projects(cc, grp:dict, prjid:str, all_projects:list) -> bool:
@@ -245,6 +248,10 @@ def run(argv:list[str]) -> None:
       print(f'Warning: Project {argv[1]} has {len(res)} active resources')
       if not '--force' in argv:
         print('Use --force option to continue regardless')
+        print()
+        print('Resources found:')
+        for rs in res:
+          print('  {provider}.{type} {name}'.format(**rs))
         return
 
     dryrun  = True

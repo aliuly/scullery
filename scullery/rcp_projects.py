@@ -124,6 +124,11 @@ def run(argv:list[str]) -> None:
         print(f'Warning: Project {argv[1]} has {len(res)} active resources')
         if not '--force' in argv:
           print('Use --force option to continue regardless')
+          print('')
+          print('Resources found:')
+          for rs in res:
+            print('  {provider}.{type} {name}'.format(**rs))
+
           return
       cc.iam.del_project(prjdat[0]['id'])
     except KeyError:
@@ -213,6 +218,10 @@ def run(argv:list[str]) -> None:
     print('add prjname description : add project')
     print('del prjname: del kermit project -- make sure all resources are deleted before using this')
     print('grant role on project to group : assign permissions')
+    print('')
+    print('Note that for kermit created projects, it is recomended to')
+    print('delete them using the kermit delete recipe instead of "prj del"')
+    
 
 
 
