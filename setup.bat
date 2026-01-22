@@ -1,4 +1,4 @@
-REM ~ @echo off
+@echo off
 setlocal
 
 if EXIST %~dp0%env.bat (
@@ -16,22 +16,38 @@ if NOT "%proxy%"=="" (
 )
 
 set VENV=%~dp0.venv
+set command=python
+set mode=
 if NOT EXIST %VENV%\Scripts\activate.bat (
-  if "%1"=="exe" (
-    echo Setting VENV-exe
-    python.exe -m venv --system-site-packages %VENV%
-  ) else (
+  @REM set-up a virtual python environment
+  for %%p in ("%PATH:;=" "%") do (
+    if exist "%%~p\%command%.bat" (
+      set mode=bat
+      goto :FOUND
+    )
+  )
+  if exist %command%.bat (
+    set mode=bat
+  )
+  :FOUND
+  echo mode=%mode%
+  if "%mode%"=="bat" (
     echo Setting VENV-bat
-    call python.bat -m venv --system-site-packages %VENV%
+    call %command%.bat -m venv --system-site-packages %VENV%
+  ) else (
+    echo Setting VENV
+    %command% -m venv --system-site-packages %VENV%
+  )
+  if NOT EXIST %VENV%\Scripts\activate.bat (
+    echo.
+    echo FAILED setting up VENV
+    echo Python missing?
+    goto :EOF
   )
 )
+
 call %VENV%\Scripts\activate.bat
 
-pip install %pipproxy% --requirement %~dp0%requirements.txt
 
-if "%1"=="exe" (
-  pip install %pipproxy% "pyinstaller<6.9"
-) else (
-  pip install %pipproxy% icecream
-  pip install %pipproxy% "pyinstaller<6"
-)
+python -m pip install %pipproxy% --requirement %~dp0%requirements.txt
+python -m pip install %pipproxy% icecream
