@@ -36,25 +36,26 @@ defaults = {
 #
 # Support functions
 #
-def cloud(cloud_name:str = '', **kwargs) -> api.ApiSession:
+def cloud(cloud_name:str = '', scoped:bool =False, **kwargs) -> api.ApiSession:
   '''Return connections to clouds
 
   :param cloud_name: Cloud to configure
+  :param scoped: create a scoped token
   :param **kwargs: optional credentials to use
   :returns: An API session
   '''
+  cloud_id = f'{cloud_name if cloud_name != "" else defaults["cloud"]}{":scoped" if scoped else ""}'
 
-  if not cloud_name in clouds:
+  if not cloud_id in clouds:
     fopts = dict(kwargs)
     if cloud_name != '':
       fopts['cloud_name'] = cloud_name
-    else:
+    elif 'cloud_name' not in fopts:
       fopts['cloud_name'] = defaults['cloud'] # Default cloud
     cloud_creds = creds.creds(**fopts)
+    clouds[cloud_id] = api.ApiSession(cloud_creds, scoped)
 
-    clouds[cloud_name] = api.ApiSession(cloud_creds)
-
-  return clouds[cloud_name]
+  return clouds[cloud_id]
 
 def clean_up()->None:
   '''Clean-up all connections'''

@@ -1,0 +1,47 @@
+#
+# Sample kermit project definition
+#
+roles:
+  ACME-{project}-ops:
+  - Action:
+    - 'ecs:*:get*'
+    - 'ecs:*:list*'
+    - 'ecs:*:stop*'
+    - 'ecs:*:start*'
+    - 'ecs:*:reboot*'
+    Effect: Allow
+
+#
+# Groups section contains a base group name, and the role that it
+# will be assigned
+#
+groups:
+  {project}_admins: te_admin
+  {project}_guests: readonly
+  {project}_ops: ACME-{project}-ops
+
+#
+# If the users section does not exists a users section will be
+# generated with one random user for each group defined earlier
+#
+# Users should contain a "User_name" and a "group_name" that the
+# user will be assigned to.
+users:
+  {project}_admin: {project}_admins
+  {project}_guest: {project}_guests
+  {project}_op: {project}_ops
+
+#
+# The creds section is used to define initial password for newly
+# created users.
+#
+# It should contain mappings of "user: password"
+#
+# if a user defined in users does not have a matching password in
+# the creds section a random password will be assigned.
+#
+#~ creds:
+  #~ {project}_admin: "change-me"
+  #~ {project}_guest: "change-me"
+  #~ {project}_op: "change-me"
+

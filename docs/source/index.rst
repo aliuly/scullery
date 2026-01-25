@@ -2,7 +2,7 @@
 Project Documentation
 =====================
 
-ypplib |release|
+scullery |release|
 
 .. toctree::
    :maxdepth: 2

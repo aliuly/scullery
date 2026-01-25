@@ -6,6 +6,7 @@
 
 import random
 import string
+import json
 
 try:
   from icecream import ic
@@ -195,6 +196,25 @@ class Iam:
     if not resp.status_code in [200, 204]:
       raise RuntimeError(resp.text if resp.text else resp.reason)
 
+  def reset_passwd(self, usr_id:str, password:str,pwd_status:bool = True):
+    '''Used to reset a password for a user.
+
+    :params usr_id: (Mandatory) ID of user to reset the password off
+    :params password: Password.  Must be between 6 to 32 characters.  Contain at least two character types out of uppercase, lowercase, digits and special characters.
+    :params pwd_status: If True the passwords needs to be reset on first login.  Defaults to True.
+    :raises RuntimeError: on error
+    '''
+    ic(pwd_status)
+    resp = self.session.patch(self.api_path(f'v3/users/{usr_id}'),
+                                  json = {
+                                    'user': {
+                                      'password': password,
+                                      'pwd_status': pwd_status,
+                                    }
+                                  })
+    resp.raise_for_status()
+    return resp.json()['user']
+
   def groups(self, name:str|None = None) -> list:
     '''Return a list of groups
 
@@ -274,7 +294,7 @@ class Iam:
     if resp.status_code != 204:
       raise RuntimeError(resp.text if resp.text else resp.reason)
 
-  def domain(self, context:str|None = None) -> str:
+  def domain(self, context:str|None = None, output:dict|None = None) -> str:
     '''Get the domain for a given project/region/or user default
 
     :param context: Either a project name, region name or None
@@ -293,6 +313,7 @@ class Iam:
       if len(q) > 0: return q[0]['id']
     q = self.projects(context)
     if len(q) == 0: raise KeyError(f'Unable to match "{context}"')
+    if output is not None: output.update(q[0])
     return q[0]['domain_id']
 
   def domains(self) -> list:
@@ -437,13 +458,38 @@ class Iam:
     '''
     return ''.join(random.sample((string.ascii_lowercase + string.ascii_uppercase + string.digits)*length, length))
 
+  def get_aksk(self, duration_seconds:int = 900):
+    '''Issue a AK/SK pair
+
+    :param duration_seconds: AK/SK validity (defaults to 900 seconds/15 minutes
+    :returns: AK,SK token
+    '''
+    resp = self.session.post(self.api_path('v3.0/OS-CREDENTIAL/securitytokens'),
+            data = json.dumps({
+                'auth': {
+                  'identity': {
+                    'methods': [ 'token' ],
+                    'token': {
+                      'id': self.session.token,
+                      'duration_seconds': duration_seconds,
+                    },
+                  }
+                }
+              }))
+    resp.raise_for_status()
+    return resp.json()['credential']
+
+
+
 if __name__ == '__main__':
   import api
   import creds
-  cfg = creds.creds(cloud_name = 'otc-de-iam')
+  import yaml
+
+  api.http_logging()
+  cfg = creds.creds(cloud_name = 'otc-eu-de')
   api = api.ApiSession(cfg)
-
-
+  iam = Iam(api)
 
   del(api)
 

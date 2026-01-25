@@ -40,62 +40,105 @@ scullery grp del groupname
 ```
 ***
 '''
-
+import argparse
 import json
 import os
-# ~ import sys
-# ~ import yaml
+import sys
+import yaml
+try:
+  from icecream import ic
+except ImportError:  # Graceful fallback if IceCream isn't installed.
+  ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 from scullery import cloud
+from scullery import parsers
+from scullery import usergroup
 
-def run(argv:list[str]) -> None:
-  '''Manage groups (verbs: <none>, get, add, del)'''
+def add_group(args:argparse.Namespace):
   cc = cloud()
+  newid = usergroup.add_group(cc, args.name,
+            description = args.description,
+            project = args.project)
+  print('grp id', newid)
 
-  if len(argv) == 0:
-    for g in cc.iam.groups():
-      print('{name} {description}'.format(**g))
-  elif argv[0] == 'get':
-    for group_name in argv[1:]:
-      group = cc.iam.groups(group_name)
-      if len(group) != 1:
-        print(f'{group_name} not matched')
-        continue
-      group = group[0]
-      print('id:    {id}\n name: {name}\n desc: {description}'.format(**group))
-      # ~ print(json.dumps(group,indent=2))
-
-      perms = cc.iam.get_domain_group_perms(group['domain_id'], group['id'])
-      if len(perms) > 0:
-        # ~ print(json.dumps(perms,indent=2))
-        print(' Domain roles:')
-        for r in perms:
-          print('  - {display_name}: {description}'.format(**r))
-
-      users = cc.iam.group_users(group['id'])
-      if len(users) > 0:
-        print(' users;')
-        for u in users:
-          print('   {name}: {description}'.format(**u))
-
-  elif argv[0] == 'add' or argv[0] == 'create' or argv[0] == 'new':
-    if len(argv) >= 2:
-      grpname = argv[1]
-      desc = f'Group created by {os.getlogin()} using scullery' if len(argv) == 2 else argv[2]
-
-      newid = cc.iam.new_group(grpname, desc)
-      print('grp id', newid)
-  elif argv[0] == 'del' or argv[0] == 'rm' or argv[0] == 'remove':
+def del_group(args:argparse.Namespace):
+  cc = cloud()
+  for g in args.name:
     try:
-      grps = cc.iam.groups(argv[1])
+      grps = cc.iam.groups(g)
+      if len(grps) != 1: raise KeyError(g)
       cc.iam.del_group(grps[0]['id'])
+      sys.stderr.write(f'Removed group: {g} ({grps[0]["id"]})\n')
     except KeyError:
-      print('Group already deleted')
-  else:
-    print('Usage')
-    print('default : list groups')
-    print('get group : get details for group')
-    print('add grpname [descp: add new group')
-    print('del grpname : del group')
+      sys.stderr.write(f'{g}: Group not found\n')
 
+def get_group(args:argparse.Namespace):
+  cc = cloud()
+  for group_name in args.group:
+    group = cc.iam.groups(group_name)
+    if len(group) != 1:
+      sys.stderr.write(f'{group_name} not matched\n')
+      continue
+    group = group[0]
+    print('id:    {id}\n name: {name}\n desc: {description}'.format(**group))
+    # ~ print(json.dumps(group,indent=2))
+
+    perms = cc.iam.get_domain_group_perms(group['domain_id'], group['id'])
+    if len(perms) > 0:
+      # ~ print(json.dumps(perms,indent=2))
+      print(' Domain roles:')
+      for r in perms:
+        print('  - {display_name}: {description}'.format(**r))
+
+    users = cc.iam.group_users(group['id'])
+    if len(users) > 0:
+      print(' users;')
+      for u in users:
+        print('   {name}: {description}'.format(**u))
+
+def list_groups(args:argparse.Namespace):
+  cc = cloud()
+  for g in cc.iam.groups():
+    print('{name} {description}'.format(**g))
+
+def parser(subp):
+  pr = subp.add_parser('groups',
+                        help = 'Group recipes',
+                        aliases = ['group','grp','g'])
+  gsp = pr.add_subparsers(title='op',
+                          description='Operation.  If not spcified, list groups.',
+                          required = False,
+                          help = 'Operation')
+  pp = gsp.add_parser('get',
+                  help = 'Get details for group',
+                  aliases = ['g'])
+  pp.add_argument('group',
+                  help='Group to look-up',
+                  nargs='+')
+  pp.set_defaults(recipe_cb = get_group)
+
+  pp = gsp.add_parser('add',
+                  help = 'Add group',
+                  aliases = ['create', 'new','a'])
+  pp.add_argument('-d','--description', '--desc', dest='description',
+                    help = 'Optional description')
+  pp.add_argument('-p','--project','--proj', dest = 'project',
+                  help = 'Include project name in description')
+  pp.add_argument('name',
+                  help='Group name')
+  pp.set_defaults(recipe_cb = add_group)
+
+  pp = gsp.add_parser('del',
+                  help = 'Delete group',
+                  aliases = ['rm', 'd','rr'])
+  pp.add_argument('name',
+                  nargs='+',
+                  help='Group name to delete')
+  pp.set_defaults(recipe_cb = del_group)
+
+
+  pr.set_defaults(recipe_cb = list_groups)
+
+
+parsers.register_parser('groups',parser)
 

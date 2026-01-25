@@ -1,0 +1,8 @@
+# Same as Black.
+line-length = 88
+indent-width = 2
+
+#~ target-version = "py39"
+
+[lint]
+ignore = [ "E701"]

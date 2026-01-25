@@ -74,101 +74,170 @@ This will remove `username` from `groupname`.
 ***
 '''
 #
-# Roles recipe
+# Users recipe
 #
+import argparse
 import json
+
 import os
 import sys
+import yaml
+
+try:
+  from icecream import ic
+except ImportError:  # Graceful fallback if IceCream isn't installed.
+  ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 from scullery import cloud
+from scullery import parsers
+from scullery import usergroup
 
-def run(argv:list[str]) -> None:
-  '''Manage users (verbs: <none>, get, add, group, del)'''
+def mod_group(args:argparse.Namespace):
+  cc = cloud()
+  q = cc.iam.groups(args.group)
+  if len(q) != 1:
+    sys.stderr.write(f'Unmatched group {args.group}\n')
+    exit(4)
+  group = q[0]
+  q = cc.iam.users(args.user)
+  if len(q) != 1:
+    sys.stderr.write(f'Unmatched user {args.user}\n')
+    exit(4)
+  user = q[0]
+  if args.op == 'add':
+    cc.iam.add_group_user(group['id'],user['id'])
+  elif args.op == 'del':
+    cc.iam.del_group_user(group['id'],user['id'])
+  else:
+    raise KeyError(args.op)
+
+def list_users(args:argparse.Namespace):
+  cc = cloud()
+  for u in cc.iam.users():
+    if 'description' not in u: u['description'] = ''
+    print('{name} {description} {email}'.format(**u))
+
+def get_user(args:argparse.Namespace):
+  cc = cloud()
+  for user_name in args.user:
+    users = cc.iam.users(user_name)
+    if len(users) != 1:
+      print(f'{user_name} not matched')
+      continue
+    u = users[0]
+    print(json.dumps(u,indent=2))
+    q = cc.iam.user_groups(u['id'])
+    if len(q) > 0:
+      print('groups:')
+      for g in q:
+        print('  {name} {description}'.format(**g))
+
+def add_user(args:argparse.Namespace):
   cc = cloud()
 
-  if len(argv) == 0:
-    for u in cc.iam.users():
-      if not 'description' in u: u['description'] = ''
-      print('{name} {description} {email}'.format(**u))
-  elif argv[0] == 'get':
-    for user_name in argv[1:]:
-      users = cc.iam.users(user_name)
-      if len(users) != 1:
-        print(f'{user_name} not matched')
-        continue
-      u = users[0]
-      print(json.dumps(u,indent=2))
-      q = cc.iam.user_groups(u['id'])
-      if len(q) > 0:
-        print('groups:')
-        for g in q:
-          print('  {name} {description}'.format(**g))
-  elif argv[0] == 'add' or argv[0] == 'create' or argv[0] == 'new':
-    domain_id = cc.iam.domain()
-    groups = {}
-    new_user = {
-        'pwd_status': False,
-        'domain_id': domain_id,
-        'description': f'user created by {os.getlogin()} using scullery',
-    }
-    for opt in argv[1:]:
-      found = False
-      for arg in ['name','password','email','description']:
-        if opt.startswith('--'+arg):
-          new_user[arg] = opt[len(arg)+3:]
-          found = True
-          break
-      if found: continue
-      if opt.startswith('--desc='):
-        new_user['description'] = opt[7:]
-      elif opt.startswith('--group='):
-        q = cc.iam.groups(opt[8:])
-        if len(q) != 1:
-          sys.stderr.write(f'Invalid group name {opt[8:]}\n')
-          exit(9)
-        groups[q[0]['name']] = q[0]['id']
-    if not 'name' in new_user:
-      new_user['name'] = cc.iam.gen_user_name()
-      print('Random user name:', new_user['name'])
-    if not 'password' in new_user:
-      new_user['password'] = cc.iam.gen_user_password()
-      print('Random password:', new_user['password'])
+  res = usergroup.add_user(cc,
+              name = args.name,
+              passwd = args.passwd,
+              description = args.description,
+              email = args.email,
+              project = args.project,
+              groups = args.group)
+  print(yaml.dump(res))
 
-    # ~ print(new_user, groups)
-    newid = cc.iam.new_user(**new_user)
-    print('New user ID',newid)
-    for gname,gid in groups.items():
-      print(f'Adding group {gname}')
-      cc.iam.add_group_user(gid, newid)
-  elif argv[0] == 'group':
-    q = cc.iam.groups(argv[1])
-    if len(q) != 1:
-      print(f'Unmatched group {argv[1]}')
-      exit(9)
-    group = q[0]
-    q = cc.iam.users(argv[3])
-    if len(q) != 1:
-      print(f'Unmatched user {argv[3]}')
-      exit(4)
-    user = q[0]
-    if argv[2] == 'add':
-      cc.iam.add_group_user(group['id'],user['id'])
-    elif argv[2] == 'del' or argv[2] == 'rm' or argv[2] == 'remove':
-      cc.iam.del_group_user(group['id'],user['id'])
-    else:
-      print(f'Unknown op {argv[2]}')
-  elif argv[0] == 'del' or argv[0] == 'rm' or argv[0] == 'remove':
-    q = cc.iam.users(argv[1])
-    if len(q) != 1:
-      print('User not matched')
-      exit(2)
-    cc.iam.del_user(q[0]['id'])
-  else:
-    print('Usage')
-    print('default : list users')
-    print('get usrname : get details for user')
-    print('add --name= --password= --email= --description= --group=: add new user')
-    print('del username : del user')
-    print('group groupname add|del username : add or remove user from group')
+def del_user(args:argparse.Namespace):
+  cc = cloud()
+  for u in args.name:
+    try:
+      user = cc.iam.users(u)
+      if len(user) != 1: raise KeyError(u)
+      cc.iam.del_user(user[0]['id'])
+      sys.stderr.write(f'Removed user: {u} ({user[0]["id"]})\n')
+    except KeyError:
+      sys.stderr.write(f'{u}: User not found\n')
+
+def set_passwd(args:argparse.Namespace):
+  cc = cloud()
+
+  q = cc.iam.users(args.user)
+  if len(q) != 1: raise KeyError(args.user)
+  user_id = q[0]['id']
+  if args.password is None:
+    args.password = cc.iam.gen_user_password()
+    print('password', args.password)
+  cc.iam.reset_passwd( user_id, args.password, args.set_pwd)
+
+def parser(subp):
+  pr = subp.add_parser('users',
+                        help = 'User recipes',
+                        aliases = ['user','usr','u'])
+  pr.set_defaults(recipe_cb = list_users)
+  usp = pr.add_subparsers(title='op',
+                          description='Operation.  If not spcified, list users.',
+                          required = False,
+                          help = 'Operation')
+  pp = usp.add_parser('get',
+                  help = 'Get details for user',
+                  aliases = ['g'])
+  pp.add_argument('user',
+                  help='User to look-up',
+                  nargs='+')
+  pp.set_defaults(recipe_cb = get_user)
+
+  pp = usp.add_parser('add',
+                  help = 'Add user',
+                  aliases = ['new','create','a','n','c'])
+
+  pp.add_argument('-P','--password','--passwd', dest = 'passwd',
+                  help = 'Password to use (if not specified a random password is used)')
+  pp.add_argument('-n','--name', '--user', dest = 'name',
+                  help = 'User name to create (it not specified a random name is used)')
+  pp.add_argument('-m','-e','--email','--mail', dest = 'email',
+                  help = 'Assign e-mail address')
+  pp.add_argument('-d','--description','--desc', dest = 'description',
+                  help = 'Description for this user')
+  pp.add_argument('-p','--project','--proj', dest = 'project',
+                  help = 'Include project name in description')
+  pp.add_argument('-g','--group','--grp', dest = 'group',
+                  action = 'append', default = [],
+                  help = 'Assign group (can be specified multiple times)')
+
+  pp.set_defaults(recipe_cb = add_user)
+
+  pp = usp.add_parser('del',
+                  help = 'Delete user',
+                  aliases = ['rm', 'd','rr'])
+  pp.add_argument('name',
+                  nargs='+',
+                  help='User name to delete')
+  pp.set_defaults(recipe_cb = del_user)
+
+  pp = usp.add_parser('group',
+                  help = 'Modify user group membership',
+                  aliases = ['grp', 'gr'])
+  pp.add_argument('group',
+                  help='Group to modify')
+  pp.add_argument('op',
+                  choices=['add','del'],
+                  help='Add or Delete operation')
+  pp.add_argument('user',
+                  help='User to add/del from group')
+  pp.set_defaults(recipe_cb = mod_group)
+
+  pp = usp.add_parser('passwd',
+                      help = 'set/reset user password',
+                      aliases = [ 'reset-passwd', 'password', 'set-passwd', 'pass' ])
+  pp.add_argument('-S', '--chg-pwd', dest = 'set_pwd',
+                      help = 'Ask password to be changed on first login',
+                      action = 'store_true', default = False)
+  pp.add_argument('user',
+                  help = 'User to modify')
+  pp.add_argument('password',
+                  nargs='?',
+                  help='Password to set (if not specify will use a random string)')
+  pp.set_defaults(recipe_cb = set_passwd)
 
 
+
+
+
+parsers.register_parser('users',parser)

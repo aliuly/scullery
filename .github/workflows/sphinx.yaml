@@ -46,7 +46,7 @@ jobs:
         run: |
           make -C docs html && cp -av docs/_build/html _site
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3
   # Deployment job
   deploy:
     environment:
@@ -57,7 +57,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4
 
 
 
