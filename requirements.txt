@@ -3,3 +3,8 @@
 #
 pyyaml
 requests
+
+# QA stuff
+ruff
+py-cyclo
+detect-secrets

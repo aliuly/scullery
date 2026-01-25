@@ -1,7 +1,7 @@
 '''
 Used to define sub-parsers
 '''
-from typing import Callable
+from typing import Callable, Any
 
 PARSER_FACTORY = {}
 

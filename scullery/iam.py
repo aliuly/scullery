@@ -491,11 +491,6 @@ if __name__ == '__main__':
   api = api.ApiSession(cfg)
   iam = Iam(api)
 
-  uid = '316190c8d3f84517b343b38979b395fa'
-  r = iam.reset_passwd(uid, iam.gen_user_password(), False)
-  ic(r)
-
-
   del(api)
 
 
