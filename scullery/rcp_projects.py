@@ -59,24 +59,52 @@ scullery prj revoke rolename on region_projectname from groupname
 ```
 ***
 '''
+import argparse
 import json
 import os
+import re
 import sys
 
-from scullery import cloud
+try:
+  from icecream import ic
+except ImportError:  # Graceful fallback if IceCream isn't installed.
+  ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
-def run(argv:list[str]) -> None:
-  '''Manage projects (verbs: <none>, get, add, del, grant, revoke)'''
+from scullery import cloud
+from scullery import parsers
+
+RE_PRJSIG = re.compile(r'^-- \S+ created by \S+ using scullery -- project:(\S+)($|\|)')
+
+def add_prj(args:argparse.Namespace):
   cc = cloud()
 
-  if len(argv) == 0:
-    for p in cc.iam.projects():
-      details = cc.iam.get_project_details(p['id'])
-      print('{id} {name:22} {status:8} {description}'.format(**details))
+  desc = f'-- Project created by {os.getlogin()} using scullery'
+  if args.description is not None:
+    desc += f'|{args.description}'
+
+  if '_' not in args.name:
+    raise ValueError(f'Project name {args.name} does not have a region')
+
+  region, _ = args.name.split('_',1)
+  regdat = cc.iam.projects(name = region)
+
+  if len(regdat) != 1: raise KeyError(region)
+
+  newid = cc.iam.new_project(args.name, regdat[0]['id'], desc)
+  sys.stderr.write(f'Project ID={newid}\n')
+
+def list_prj(args:argparse.Namespace):
+  cc = cloud()
+  for p in cc.iam.projects():
+    details = cc.iam.get_project_details(p['id'])
+    print('{id} {name:22} {status:8} {description}'.format(**details))
       # ~ print(json.dumps(details, indent=2))
-  elif argv[0] == 'get':
-    grps = cc.iam.groups()
-    prjlst = cc.iam.projects(name=argv[1])
+
+def get_prj(args:argparse.Namespace):
+  cc = cloud()
+  grps = cc.iam.groups()
+  for prj_name in args.project:
+    prjlst = cc.iam.projects(name=args.project)
     for prj in prjlst:
       details = cc.iam.get_project_details(prj['id'])
       print('id:        {id}\n  name:    {name}\n  desc:    {description}\n  enabled: {enabled}\n  status:  {status}'.format(**details))
@@ -95,133 +123,200 @@ def run(argv:list[str]) -> None:
         print('  roles per group')
         for role in roles.values():
           print('    {0}: {1}'.format(*role))
-  elif argv[0] == 'add' or argv[0] == 'create' or argv[0] == 'new':
-    print(len(argv))
-    if len(argv) >= 2:
-      prjname = argv[1]
-      desc = f'Project created by {os.getlogin()} using scullery' if len(argv) == 2 else argv[2]
-      if not '_' in prjname:
-        print('No region specified')
-        return
-      region, _ = prjname.split('_',1)
-      regdat = cc.iam.projects(name=region)
-      if len(regdat) != 1:
-        print(f'Unknown region {region}')
-        return
 
-      newid = cc.iam.new_project(prjname, regdat[0]['id'], desc)
-      print('prj id', newid)
-    else:
-      print('Usage: add <prjname> [description]')
-  elif argv[0] == 'del' or argv[0] == 'rm' or argv[0] == 'remove':
+
+def del_prj(args:argparse.Namespace):
+  cc = cloud()
+  for prjname in args.name:
     try:
-      prjdat = cc.iam.projects(argv[1])
-      if len(prjdat) != 1:
-        print('Unable to find project')
-        return
-      res = cc.rms.resources(argv[1])
+      prjdat = cc.iam.projects(prjname)
+      if len(prjdat) != 1: raise KeyError(prjname)
+
+      res = cc.rms.resources(prjname)
       if len(res) > 0:
-        print(f'Warning: Project {argv[1]} has {len(res)} active resources')
-        if not '--force' in argv:
-          print('Use --force option to continue regardless')
-          print('')
-          print('Resources found:')
+        sys.stderr.write(f'Warning: Project {prjname} has {len(res)} active resources\n')
+        if not args.force:
+          sys.stderr.write('Use --force option to continue regardless\n\n')
+          sys.stderr.write('Resources found:\n')
           for rs in res:
-            print('  {provider}.{type} {name}'.format(**rs))
+            sys.stderr.write('- {provider}.{type} {name}\n'.format(**rs))
+          continue
 
-          return
+      # Delete any associated users...
+      for u in cc.iam.users():
+        if 'description' not in u: continue
+        if not (mv := RE_PRJSIG.search(u['description'])): continue
+        if mv.group(1) != prjname: continue
+        cc.iam.del_user(u['id'])
+        sys.stderr.write(f'Deleted user {u["name"]}\n')
+
+      # Delete any associated groups
+      for g in cc.iam.groups():
+        if 'description' not in g: continue
+        if not (mv := RE_PRJSIG.search(g['description'])): continue
+        if mv.group(1) != prjname: continue
+        cc.iam.del_group(g['id'])
+        sys.stderr.write(f'Deleted group {g["name"]}\n')
+
+      # Delete any associated roles
+      for r in cc.iam.custom_roles():
+        if 'description' not in r: continue
+        if not (mv := RE_PRJSIG.search(r['description'])): continue
+        if mv.group(1) != prjname: continue
+        cc.iam.del_role(r['id'])
+        sys.stderr.write(f'Deleted role {r["name"]}\n')
+
+      ############################# TESTING ##########################
+      # ~ sys.stderr.write(f'NOT Deleted {prjname} ({prjdat[0]["id"]})\n')
       cc.iam.del_project(prjdat[0]['id'])
+      sys.stderr.write(f'Deleted {prjname} ({prjdat[0]["id"]})\n')
     except KeyError:
-      print('Project already deleted')
-  elif argv[0] == 'grant':
-    role = argv[1]
-    group = None
-    project = None
-    argv = argv[2:]
-    while len(argv) > 0 and (argv[0] == 'on' or argv[0] == 'to'):
-      if argv[0] == 'on':
-        project = argv[1]
-        argv = argv[2:]
-      elif argv[0] == 'to':
-        group = argv[1]
-        argv = argv[2:]
+      sys.stderr.write(f'{prjname}: Project not found\n')
 
-    if role is None:
-      role = argv[0]
-      argv = argv[1:]
-    if group is None:
-      group = argv[0]
-      argv = argv[1:]
+def grant_prj(args:argparse.Namespace):
+  cc = cloud()
 
-    q = cc.iam.projects(name=project)
-    if len(q) != 1:
-      sys.stderr.write(f'Error matching project {project}\n')
-      exit(8)
-    prj_id = q[0]['id']
-    q = cc.iam.groups(name=group)
-    if len(q) != 1:
-      sys.stderr.write(f'Error matching group {group}\n')
-      exit(3)
-    grp_id = q[0]['id']
-    q = cc.iam.get_role(role)
-    role_id = q['id']
+  role = args.grants[0]
+  group = None
+  project = None
+  argv = args.grants[1:]
+  while len(argv) > 0:
+    if argv[0] == 'on':
+      project = argv[1]
+      argv = argv[2:]
+    elif argv[0] == 'to':
+      group = argv[1]
+      argv = argv[2:]
+    else:
+      if project is None:
+        project = argv[0]
+        argv = argv[1:]
+      elif group is None:
+        group = argv[0]
+        argv = argv[1:]
+      else:
+        raise SyntaxError(f'Error grants: {' '.join(args.grants)}')
 
-    print('role',role, role_id)
-    print('group',group, grp_id)
-    print('project',project, prj_id)
+  if project is None or group is None:
+    raise SyntaxError(f'Grant requires project and group to be specified')
 
-    cc.iam.grant_project_group_perms(prj_id, grp_id, role_id)
+  q = cc.iam.projects(name=project)
+  if len(q) != 1: raise KeyError(project)
+  prj_id = q[0]['id']
 
-  elif argv[0] == 'revoke':
-    role = argv[1]
-    group = None
-    project = None
-    argv = argv[2:]
-    while len(argv) > 0 and (argv[0] == 'on' or argv[0] == 'from'):
-      if argv[0] == 'on':
-        project = argv[1]
-        argv = argv[2:]
-      elif argv[0] == 'from':
-        group = argv[1]
-        argv = argv[2:]
+  q = cc.iam.groups(name=group)
+  if len(q) != 1: raise KeyError(group)
+  grp_id = q[0]['id']
 
-    if role is None:
-      role = argv[0]
-      argv = argv[1:]
-    if group is None:
-      group = argv[0]
-      argv = argv[1:]
+  q = cc.iam.get_role(role)
+  role_id = q['id']
 
-    q = cc.iam.projects(name=project)
-    if len(q) != 1:
-      sys.stderr.write(f'Error matching project {project}\n')
-      exit(8)
-    prj_id = q[0]['id']
-    q = cc.iam.groups(name=group)
-    if len(q) != 1:
-      sys.stderr.write(f'Error matching group {group}\n')
-      exit(3)
-    grp_id = q[0]['id']
-    q = cc.iam.get_role(role)
-    role_id = q['id']
+  print('role',role, role_id)
+  print('group',group, grp_id)
+  print('project',project, prj_id)
 
-    print('role',role, role_id)
-    print('group',group, grp_id)
-    print('project',project, prj_id)
+  cc.iam.grant_project_group_perms(prj_id, grp_id, role_id)
 
-    cc.iam.revoke_project_group_perms(prj_id, grp_id, role_id)
+def revoke_prj(args:argparse.Namespace):
+  cc = cloud()
 
-  else:
-    print('Usage')
-    print('default : list projects')
-    print('get project prjname : get details for project')
-    print('add prjname description : add project')
-    print('del prjname: del kermit project -- make sure all resources are deleted before using this')
-    print('grant role on project to group : assign permissions')
-    print('')
-    print('Note that for kermit created projects, it is recomended to')
-    print('delete them using the kermit delete recipe instead of "prj del"')
-    
+  role = args.revokes[0]
+  group = None
+  project = None
+  argv = args.revokes[1:]
+  while len(argv) > 0:
+    if argv[0] == 'on':
+      project = argv[1]
+      argv = argv[2:]
+    elif argv[0] == 'from':
+      group = argv[1]
+      argv = argv[2:]
+    else:
+      if project is None:
+        project = argv[0]
+        argv = argv[1:]
+      elif group is None:
+        group = argv[0]
+        argv = argv[1:]
+      else:
+        raise SyntaxError(f'Error revoking: {' '.join(args.revokes)}')
+
+  if project is None or group is None:
+    raise SyntaxError(f'Revoking requires project and group to be specified')
+
+  q = cc.iam.projects(name=project)
+  if len(q) != 1: raise KeyError(project)
+  prj_id = q[0]['id']
+
+  q = cc.iam.groups(name=group)
+  if len(q) != 1: raise KeyError(group)
+  grp_id = q[0]['id']
+
+  q = cc.iam.get_role(role)
+  role_id = q['id']
+
+  print('role',role, role_id)
+  print('group',group, grp_id)
+  print('project',project, prj_id)
+  cc.iam.revoke_project_group_perms(prj_id, grp_id, role_id)
 
 
+def parser(subp):
+  pr = subp.add_parser('project',
+                        help = 'Project Management service',
+                        aliases = ['projects', 'prj','p'])
+  pr.set_defaults(recipe_cb = list_prj)
+
+  sp = pr.add_subparsers(title='op',
+                          description='Operation.  If not spcified, list projects.',
+                          required = False,
+                          help = 'Operation')
+
+  pp = sp.add_parser('get',
+                  help = 'Get details for project',
+                  aliases = ['g'])
+  pp.add_argument('project',
+                  help='Project to look-up',
+                  nargs='+')
+  pp.set_defaults(recipe_cb = get_prj)
+
+  pp = sp.add_parser('add',
+                  help = 'Add Project',
+                  aliases = ['create', 'new','a'])
+  pp.add_argument('-d','--description', '--desc', dest='description',
+                    help = 'Optional description')
+  pp.add_argument('name',
+                  help='Project name')
+  pp.set_defaults(recipe_cb = add_prj)
+
+  pp = sp.add_parser('del',
+                  help = 'Delete Project',
+                  aliases = ['remove', 'rm','r'])
+  pp.add_argument('-f','--force',
+                    action='store_true', default=False,
+                    help = 'Force remove even if resources exists')
+  pp.add_argument('name',
+                  nargs = '+',
+                  help='Project name to delete')
+  pp.set_defaults(recipe_cb = del_prj)
+
+  pp = sp.add_parser('grant',
+                  help = 'Grant roles',
+                  aliases = ['gr'])
+  pp.add_argument('grants',
+      nargs='+',
+      help='Enter "role" [on] "project" [to] "group"')
+
+  pp.set_defaults(recipe_cb = grant_prj)
+
+  pp = sp.add_parser('revoke',
+                  help = 'Revoke roles',
+                  aliases = ['rev'])
+  pp.add_argument('revokes',
+      nargs='+',
+      help='Enter "role" [on] "project" [from] "group"')
+
+  pp.set_defaults(recipe_cb = revoke_prj)
+
+parsers.register_parser('projects',parser)
 

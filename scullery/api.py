@@ -17,6 +17,7 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 import iam
+import ims
 import tms
 import rms
 
@@ -65,7 +66,7 @@ class ApiSession:
     api_host = ApiSession.IAM_HOST.format(region = self.region)
     return f'https://{api_host}/v3/auth/tokens'
 
-  def __init__(self, creds:dict) -> None:
+  def __init__(self, creds:dict, scoped:bool = False) -> None:
     '''Constructor
 
     :param creds: Contain session credentials
@@ -100,9 +101,18 @@ class ApiSession:
         }
       }
       self.project_name = creds[CRSTR.PROJECT_NAME]
+      self.scoped = True
     else:
       self.region = creds[CRSTR.PROJECT_NAME]
       self.project_name = None
+      if scoped:
+        jsdat['auth']['scope'] = {
+          'project': {
+            'name': self.region
+          }
+        }
+      self.scoped = scoped
+
     self.user_name = creds[CRSTR.USERNAME]
     self.domain_name = creds[CRSTR.USER_DOMAIN_NAME]
     self.cloud_name = creds[CRSTR.CLOUD_NAME] if CRSTR.CLOUD_NAME in creds else None
@@ -114,6 +124,7 @@ class ApiSession:
 
     self.token = response.headers['X-Subject-Token']
     self.iam = iam.Iam(self)
+    self.ims = ims.Ims(self)
     self.tms = tms.Tms(self)
     self.rms = rms.Rms(self)
 
@@ -148,6 +159,15 @@ class ApiSession:
     :param **kwargs: additional params as needed by REST API
     '''
     return requests.post(api_url, **kwargs, headers = {
+            'X-Auth-Token': self.token,
+        })
+  def patch(self, api_url, **kwargs):
+    '''REST API `patch` method
+
+    :param api_url: URL for REST API
+    :param **kwargs: additional params as needed by REST API
+    '''
+    return requests.patch(api_url, **kwargs, headers = {
             'X-Auth-Token': self.token,
         })
   def delete(self, api_url, **kwargs):

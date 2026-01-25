@@ -4,6 +4,7 @@
 import os
 import yaml
 
+
 try:
   from icecream import ic
 except ImportError:  # Graceful fallback if IceCream isn't installed.
@@ -81,7 +82,6 @@ def creds(cloud_name:str|None = None, **kwargs) -> dict:
   if STR.HOME in os.environ:
     cloud_yamls.append(os.path.join(os.environ[STR.HOME],STR.OS_CFG_HOME,STR.CLOUDS_YAML))
   cloud_yamls.append(os.path.join(STR.ETC_CFG,STR.CLOUDS_YAML))
-
   for cfgfile in cloud_yamls:
     if not os.path.isfile(cfgfile): continue
     with open(cfgfile, 'r') as fp:
@@ -94,6 +94,7 @@ def creds(cloud_name:str|None = None, **kwargs) -> dict:
       for cn,dat in ydat[STR.CLOUDS].items():
         if isinstance(dat,dict) and STR.AUTH in dat:
           kwargs = dat[STR.AUTH]
+          kwargs[STR.CLOUD_NAME] = cn
           tmp_name = cn
           break
     else:
@@ -101,11 +102,11 @@ def creds(cloud_name:str|None = None, **kwargs) -> dict:
       kwargs = ydat[STR.CLOUDS][cloud_name][STR.AUTH]
       kwargs[STR.CLOUD_NAME] = cloud_name
 
+    if kwargs is None: continue
+
     # If no project_name but there is a region_name, use that...
     if not STR.PROJECT_NAME in kwargs and STR.REGION_NAME in ydat[STR.CLOUDS][tmp_name]:
       kwargs[STR.PROJECT_NAME] = ydat[STR.CLOUDS][tmp_name][STR.REGION_NAME]
-      kwargs[STR.CLOUD_NAME] = tmp_name
-    if kwargs is None: continue
 
     if os.path.basename(cfgfile) == STR.CLOUDS_YAML:
       secure_yaml = os.path.join(os.path.dirname(cfgfile),STR.SECURE_YAML)
@@ -114,6 +115,7 @@ def creds(cloud_name:str|None = None, **kwargs) -> dict:
           ydat = yaml.safe_load(fp)
         if STR.CLOUDS in ydat and cloud_name in ydat[STR.CLOUDS] and STR.AUTH in ydat[STR.CLOUDS][tmp_name]:
           kwargs.update(ydat[STR.CLOUDS][tmp_name][STR.AUTH])
+
     if check_kwargs(kwargs): return kwargs
 
   raise ValueError('No configuration found')

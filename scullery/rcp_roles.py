@@ -62,21 +62,20 @@ scullery role del role_name
 ***
 '''
 
+import argparse
 import json
 import os
 import sys
 import yaml
 
-from scullery import cloud
+try:
+  from icecream import ic
+except ImportError:  # Graceful fallback if IceCream isn't installed.
+  ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
-# ~ kermit_role = 'ACME-kermit-operator'
-    # ~ [
-          # ~ { 'Action': ['ecs:*:get*',
-                        # ~ 'ecs:*:list*',
-                        # ~ 'ecs:*:stop*',
-                        # ~ 'ecs:*:start*',
-                        # ~ 'ecs:*:reboot*'],
-             # ~ 'Effect': 'Allow'}])
+from scullery import cloud
+from scullery import parsers
+from scullery import usergroup
 
 def dump_roles(roles:list) -> None:
   '''INTERNAL: print role details
@@ -91,49 +90,92 @@ def dump_roles(roles:list) -> None:
     values.update(role)
     print('{name:16} {type} {display_name:24} {description}'.format(**values))
 
-def run(argv:list[str]) -> None:
-  '''Manage roles (verbs: <none>, system, get, add, del)'''
+def list_cc_roles(args:argparse.Namespace):
   cc = cloud()
+  dump_roles(cc.iam.custom_roles())
 
-  if len(argv) == 0:
-    dump_roles(cc.iam.custom_roles())
-    # ~ resp = cc.get(f'https://iam.{cc.region}.otc.t-systems.com/v3/roles', params = {
-      # ~ 'name': 'te_admin',
-    # ~ })
-    # ~ print(json.dumps(resp.json(),indent=2))
-  elif argv[0] == 'system':
-    dump_roles(cc.iam.system_roles())
-  elif argv[0] == 'get':
-    for role_name in argv[1:]:
-      role = cc.iam.get_role(role_name)
-      print(json.dumps(role, indent=2))
-  elif argv[0] == 'add' or argv[0] == 'create' or argv[0] == 'new':
-    if len(argv) == 2:
-      # Read from stdin
-      print('Enter policy rules')
-      policies = yaml.safe_load(sys.stdin)
-    elif len(argv) == 3:
-      with open(argv[2],'r') as fp:
-        policies = yaml.safe_load(fp)
-    else:
-      print('Usage: scullery roles add <role-name> [yaml-data]')
-      exit(1)
-    new_role = cc.iam.new_role(display_name = argv[1], policy = policies,
-              description = f'Role created by {os.getlogin()} using scullery' )
-    print(json.dumps(new_role, indent=2))
-  elif argv[0] == 'del' or argv[0] == 'rm' or argv[0] == 'remove':
+def del_role(args:argparse.Namespace):
+  cc = cloud()
+  for r in args.name:
     try:
-      role = cc.iam.get_role(argv[1])
-      print(role)
+      role = cc.iam.get_role(r)
+      sys.stderr.write(f'{role}\n')
       cc.iam.del_role(role['id'])
     except KeyError:
-      print('Role already deleted')
-  else:
-    print('Usage')
-    print('default : list custom roles')
-    print('system : list system roles')
-    print('get role : get details for role')
-    print('add : add kermit role')
-    print('del : del kermit role')
+      sys.stderr.write(f'{g}: Role not found\n')
 
+def add_role(args:argparse.Namespace):
+  cc = cloud()
+  policies = yaml.safe_load(args.policy)
+
+  new_role = usergroup.add_role(cc, args.name, policy = policies,
+                                project = args.project,
+                                description = args.description)
+
+  print(json.dumps(new_role, indent=2))
+
+def list_sys_roles(args:argparse.Namespace):
+  cc = cloud()
+  dump_roles(cc.iam.system_roles())
+
+
+def get_role(args:argparse.Namespace):
+  cc = cloud()
+  for role_name in args.role:
+    role = cc.iam.get_role(role_name)
+    print(json.dumps(role, indent=2))
+
+def parser(subp):
+  pr = subp.add_parser('roles',
+                        help = 'Role recipes',
+                        aliases = ['role'])
+  pr.set_defaults(recipe_cb = list_cc_roles)
+
+  rsp = pr.add_subparsers(title='op',
+                          description='Operation.  If not spcified, list custom roles.',
+                          required = False,
+                          help = 'Operation')
+  pp = rsp.add_parser('system',
+                  help = 'List system roles',
+                  aliases = ['sys', 's'])
+  pp.set_defaults(recipe_cb = list_sys_roles)
+
+  pp = rsp.add_parser('custom',
+                  help = 'List custom roles',
+                  aliases = ['cus'])
+  pp.set_defaults(recipe_cb = list_cc_roles)
+
+  pp = rsp.add_parser('get',
+                  help = 'Get details for role',
+                  aliases = ['g'])
+  pp.add_argument('role',
+                  help='Role to look-up',
+                  nargs='+')
+  pp.set_defaults(recipe_cb = get_role)
+
+  pp = rsp.add_parser('add',
+                  help = 'Add role',
+                  aliases = ['new','create','a','n','c'])
+  pp.add_argument('-d','--description','--desc', dest = 'description',
+                  help = 'Description for this role')
+  pp.add_argument('-p','--project','--proj', dest = 'project',
+                  help = 'Include project name in description')
+  pp.add_argument('name',
+                  help = 'Role name to create')
+  pp.add_argument('policy',
+                  nargs = '?',
+                  default = sys.stdin,
+                  type = argparse.FileType('r'),
+                  help = 'Policy file (if not specified will read from stdin)')
+  pp.set_defaults(recipe_cb = add_role)
+
+  pp = rsp.add_parser('del',
+                  help = 'Delete role',
+                  aliases = ['rm', 'd','rr'])
+  pp.add_argument('name',
+                  nargs='+',
+                  help='Role name to delete')
+  pp.set_defaults(recipe_cb = del_role)
+
+parsers.register_parser('roles',parser)
 
