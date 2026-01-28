@@ -50,9 +50,9 @@ class Ecs:
   def action(self, server_id:str, action:Any):
     project_id = self.session.project_id()
     url = f'v2.1/{project_id}/servers/{server_id}/action'
-    resp = self.session.get(self.api_path(url), params = kwargs)
+    resp = self.session.post(self.api_path(url), json = action)
     resp.raise_for_status()
-    data = resp.json()
+
 
   def servers(self, detail:bool = False, **kwargs) -> list:
     # https://docs.otc.t-systems.com/elastic-cloud-server/api-ref/native_openstack_nova_apis/lifecycle_management/querying_the_ecs_list.html#en-us-topic-0020212688
@@ -95,18 +95,18 @@ if __name__ == '__main__':
   import creds
   import yaml
   # ~ cfg = creds.creds(cloud_name = 'otc-eu-nl')
-  cfg = creds.creds(cloud_name = 'test')
+  cfg = creds.creds(cloud_name = 'otc-eu-de')
   # ~ ic(cfg)
   # ~ api.http_logging(1)
   api = api.ApiSession(cfg, True)
   ecs = Ecs(api)
-  # ~ ic(ecs.availability_zones())
+  ic(ecs.availability_zones())
 
   # ~ for flavor in ecs.flavors():
     # ~ print('{name} {id} ram:{ram} vcpu:{vcpus}'.format(**flavor))
-  for vm in ecs.servers(detail = True):
-    print('{name} {id} {status}'.format(**vm))
-    ic(vm)
+  # ~ for vm in ecs.servers(detail = True):
+    # ~ print('{name} {id} {status}'.format(**vm))
+    # ~ ic(vm)
 
 
   del(api)

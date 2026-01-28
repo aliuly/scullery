@@ -20,6 +20,7 @@ from scullery import proxycfg
 from scullery import parsers
 from scullery import api
 
+from scullery import rcp_ecs
 from scullery import rcp_ims
 from scullery import rcp_groups
 from scullery import rcp_kermit

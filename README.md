@@ -7,14 +7,14 @@ Most of the recipes in scullery require admin access.
 
 ## TODO
 
-- kurotc ops -- shouldn't require admin access
+- [x] kurotc ops -- shouldn't require admin access
   - start, stop, list-status
-- [ ] list flavors, deh types
-- [ ] upload to bucket
-- [ ] import OS images
-- [ ] format specification/JSON/YAML
+- [x] list flavors, deh types
 - [x] list OS images
 - [x] reset password
   - seems to work *once* and need to wait before re-use.
+- [ ] upload to bucket
+- [ ] import OS images
+- [ ] format specification/JSON/YAML
 
 

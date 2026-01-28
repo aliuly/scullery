@@ -11,6 +11,7 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 from scullery import parsers
+from scullery import proxycfg
 
 
 def show_proxy(autocfg:bool, debug:bool = False) -> None:
@@ -37,7 +38,7 @@ def run(args:argparse.Namespace):
 def parser(subp):
   pr = subp.add_parser('show-proxy-cfg',
             help = 'Show proxy auto configuration',
-            aliases = ['spc','showproxy'])
+            aliases = ['spc','showproxy', 'showcfg'])
   pr.set_defaults(recipe_cb = run)
 
 
