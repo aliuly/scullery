@@ -9,9 +9,10 @@ Most of the recipes in scullery require admin access.
 
 - kurotc ops -- shouldn't require admin access
   - start, stop, list-status
-- [ ] list flavors
+- [ ] list flavors, deh types
 - [ ] upload to bucket
 - [ ] import OS images
+- [ ] format specification/JSON/YAML
 - [x] list OS images
 - [x] reset password
   - seems to work *once* and need to wait before re-use.

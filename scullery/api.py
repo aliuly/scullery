@@ -16,6 +16,8 @@ try:
 except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
+import deh
+import ecs
 import iam
 import ims
 import tms
@@ -123,10 +125,30 @@ class ApiSession:
       raise PermissionError(response.text)
 
     self.token = response.headers['X-Subject-Token']
+    self.deh = deh.Deh(self)
+    self.ecs = ecs.Ecs(self)
     self.iam = iam.Iam(self)
     self.ims = ims.Ims(self)
     self.tms = tms.Tms(self)
     self.rms = rms.Rms(self)
+
+    self.region_data = None
+    self.project_data = None
+
+  def project_id(self) -> str:
+    if self.project_name is None: return self.region_id()
+    if self.project_data is None:
+      q = self.iam.projects(name = self.project_name)
+      if len(q) != 1: raise KeyError(self.project_name)
+      self.project_data = q[0]
+    return self.project_data['id']
+
+  def region_id(self) -> str:
+    if self.region_data is None:
+      q = self.iam.projects(name = self.region)
+      if len(q) != 1: raise KeyError(self.region)
+      self.region_data = q[0]
+    return self.region_data['id']
 
   def __del__(self) -> None:
     '''Destructor
