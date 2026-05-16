@@ -31,10 +31,10 @@ try:
 except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
-from scullery import cloud
-from scullery import formatters
-from scullery import parsers
-from scullery.api import ApiSession
+from . import clouds
+from . import formatters
+from . import parsers
+from .api import ApiSession
 
 
 # ── Column definitions ─────────────────────────────────────────────
@@ -101,7 +101,7 @@ def _action(cc: ApiSession, server_id: str, action: dict) -> None:
 
 def list_ecs(args: argparse.Namespace) -> None:
   '''List ECS servers in the current project scope'''
-  cc = cloud(scoped=args.project or True)
+  cc = clouds.session(args, scoped = True)
   data = cc.ecs.servers(detail=True)
 
   # Resolve image IDs to human-readable names via IMS, with caching
@@ -127,7 +127,7 @@ def list_ecs(args: argparse.Namespace) -> None:
 
 def list_flavors(args: argparse.Namespace) -> None:
   '''List available ECS flavors'''
-  cc = cloud(scoped=args.project or True)
+  cc = clouds.session(args, scoped = True)
   params = {}
   if args.ram is not None:
     params['minRam'] = args.ram * 1024  # user says GB, API wants MB
@@ -148,7 +148,7 @@ def list_flavors(args: argparse.Namespace) -> None:
 
 def list_zones(args: argparse.Namespace) -> None:
   '''List availability zones'''
-  cc = cloud(scoped=args.project or True)
+  cc = clouds.session(args, scoped = True)
   raw = cc.ecs.availability_zones()
 
   # Convert dict to a list of structured records
@@ -168,7 +168,7 @@ def list_zones(args: argparse.Namespace) -> None:
 
 def get_ecs(args: argparse.Namespace) -> None:
   '''Show detailed info for one or more ECS servers'''
-  cc = cloud(scoped=args.project or True)
+  cc = clouds.session(args, scoped = True)
   all_servers = cc.ecs.servers(detail=True)
   for name in args.server:
     found = [s for s in all_servers if s.get('name') == name]
@@ -181,7 +181,7 @@ def get_ecs(args: argparse.Namespace) -> None:
 
 def start_ecs(args: argparse.Namespace) -> None:
   '''Start one or more ECS servers'''
-  cc = cloud(scoped=args.project or True)
+  cc = clouds.session(args, scoped = True)
   for name in args.server:
     sid = _find_server(cc, name)
     if sid is None:
@@ -193,7 +193,7 @@ def start_ecs(args: argparse.Namespace) -> None:
 
 def stop_ecs(args: argparse.Namespace) -> None:
   '''Stop one or more ECS servers'''
-  cc = cloud(scoped=args.project or True)
+  cc = clouds.session(args, scoped = True)
   action_type = 'HARD' if args.force else 'SOFT'
   for name in args.server:
     sid = _find_server(cc, name)
@@ -206,7 +206,7 @@ def stop_ecs(args: argparse.Namespace) -> None:
 
 def reboot_ecs(args: argparse.Namespace) -> None:
   '''Reboot one or more ECS servers'''
-  cc = cloud(scoped=args.project or True)
+  cc = clouds.session(args, scoped = True)
   action_type = 'HARD' if args.force else 'SOFT'
   for name in args.server:
     sid = _find_server(cc, name)
@@ -223,9 +223,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
   '''Register the ``ecs`` sub-parser'''
   pr = subp.add_parser('ecs',
                        help='Elastic Cloud Server management',
-                       aliases=['elastic-cloud-server'])
-  pr.add_argument('--project',
-                  help='Project name to scope credentials')
+                   )
   pr.set_defaults(recipe_cb=list_ecs)
   formatters.add_format_arg(pr)
 
@@ -256,7 +254,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
   # -- get --------------------------------------------------------------
   pp = sp.add_parser('get',
                      help='Get details for a server',
-                     aliases=['g'])
+                 )
   pp.add_argument('server', nargs='+', help='Server name(s)')
   formatters.add_single_format_arg(pp)
   pp.set_defaults(recipe_cb=get_ecs)

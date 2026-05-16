@@ -171,3 +171,4 @@ cython_debug/
 .ruff_cache
 CLAUDE.md
 env
+.secrets

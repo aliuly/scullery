@@ -3,7 +3,6 @@
 ```{toctree}
 :maxdepth: 1
 
-kermit
 buckets
 deh
 ecs

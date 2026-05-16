@@ -14,8 +14,7 @@ import os
 import sys
 from inspect import getsourcefile
 
-DOCS_SOURCE_DIR = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
-DOCS_DIR = os.path.dirname(DOCS_SOURCE_DIR)
+DOCS_DIR = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
 REPO_DIR = os.path.dirname(DOCS_DIR)
 sys.path.insert(0, REPO_DIR)
 # ~ sys.path.insert(1,os.path.join(REPO_DIR,'scullery'))
@@ -50,8 +49,7 @@ myst_enable_extensions = [
 autodoc2_render_plugin = 'myst'
 # Point to the python source to document.  Can be either a directory
 # or a py file.  It *NEEDS* to be a relative path.
-autodoc2_packages = [ os.path.join('../..', meta.name) ]
-
+autodoc2_packages = [ os.path.join('..', meta.name) ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -59,7 +57,7 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '.venv']
 
 
 # -- Options for HTML output -------------------------------------------------

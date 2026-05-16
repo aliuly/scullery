@@ -50,10 +50,10 @@ try:
 except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
-from scullery import cloud
-from scullery import formatters
-from scullery import parsers
-from scullery import usergroup
+from . import clouds
+from . import formatters
+from . import parsers
+from . import usergroup
 
 
 # Columns for the list (default table) view.
@@ -64,7 +64,7 @@ COLUMNS: formatters.Columns = [
 
 def add_group(args: argparse.Namespace) -> None:
   '''Create a new group'''
-  cc = cloud()
+  cc = clouds.session(args)
   newid = usergroup.add_group(cc, args.name,
             description = args.description,
             project = args.project)
@@ -72,7 +72,7 @@ def add_group(args: argparse.Namespace) -> None:
 
 def del_group(args: argparse.Namespace) -> None:
   '''Delete one or more groups'''
-  cc = cloud()
+  cc = clouds.session(args)
   for g in args.name:
     try:
       grps = cc.iam.groups(g)
@@ -84,7 +84,7 @@ def del_group(args: argparse.Namespace) -> None:
 
 def get_group(args: argparse.Namespace) -> None:
   '''Show detailed info for one or more groups'''
-  cc = cloud()
+  cc = clouds.session(args)
   for group_name in args.group:
     group = cc.iam.groups(group_name)
     if len(group) != 1:
@@ -112,22 +112,22 @@ def get_group(args: argparse.Namespace) -> None:
 
 def list_groups(args: argparse.Namespace) -> None:
   '''List all groups'''
-  cc = cloud()
+  cc = clouds.session(args)
   rows = formatters.extract_rows(cc.iam.groups(), COLUMNS)
   formatters.write_output(rows, COLUMNS, args.format)
 
 def parser(subp: argparse.ArgumentParser) -> None:
   '''Register the ``groups`` sub-parser'''
-  pr = subp.add_parser('groups',
+  pr = subp.add_parser('group',
                         help = 'Group recipes',
-                        aliases = ['group','grp','g'])
+                        aliases = ['grp'])
   gsp = pr.add_subparsers(title='op',
                           description='Operation.  If not spcified, list groups.',
                           required = False,
                           help = 'Operation')
   pp = gsp.add_parser('get',
                   help = 'Get details for group',
-                  aliases = ['g'])
+                  )
   pp.add_argument('group',
                   help='Group to look-up',
                   nargs='+')
@@ -136,7 +136,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
 
   pp = gsp.add_parser('add',
                   help = 'Add group',
-                  aliases = ['create', 'new','a'])
+                  aliases = ['create', 'new'])
   pp.add_argument('-d','--description', '--desc', dest='description',
                     help = 'Optional description')
   pp.add_argument('-p','--project','--proj', dest = 'project',
@@ -147,7 +147,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
 
   pp = gsp.add_parser('del',
                   help = 'Delete group',
-                  aliases = ['rm', 'd','rr'])
+                  aliases = ['rm'])
   pp.add_argument('name',
                   nargs='+',
                   help='Group name to delete')

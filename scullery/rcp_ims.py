@@ -2,7 +2,7 @@
 # IMS recipes
 #
 '''
-## Imanage management recipes
+## Image management recipes
 
 This recipe is used to list images
 
@@ -26,9 +26,9 @@ try:
 except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
-from scullery import cloud
-from scullery import formatters
-from scullery import parsers
+from . import clouds
+from . import formatters
+from . import parsers
 
 
 # Columns for the list (default table) view.
@@ -51,14 +51,14 @@ def list_ims(args: argparse.Namespace) -> None:
   if args.os is not None:
     params['__platform'] = args.os
 
-  cc = cloud(scoped = args.project or True)
+  cc = clouds.session(args, scoped = True)
   data = list(cc.ims.images(**params))
   rows = formatters.extract_rows(data, COLUMNS)
   formatters.write_output(rows, COLUMNS, args.format)
 
 def get_ims(args: argparse.Namespace) -> None:
   '''Show detailed info for one or more images'''
-  cc = cloud(scoped = args.project or True)
+  cc = clouds.session(args, scoped = True)
   for image in args.image:
     for found in cc.ims.images(name = image):
       formatters.write_single_output(found, args.format)
@@ -66,25 +66,22 @@ def get_ims(args: argparse.Namespace) -> None:
 
 def parser(subp: argparse.ArgumentParser) -> None:
   '''Register the ``images`` sub-parser'''
-  pr = subp.add_parser('images',
+  pr = subp.add_parser('image',
             help = 'Image management',
-            aliases = ['ims', 'im'])
+            aliases = ['ims', 'img'])
   # pr.set_defaults(recipe_cb = list_ims, param=[])
   pr.set_defaults(recipe_cb = lambda _: pr.print_help(), param=[])
-  pr.add_argument('--project',
-                  help='Project name to scope credentials')
-
 
   formatters.add_format_arg(pr)
 
   sp = pr.add_subparsers(title='op',
-                          description='Operation.  If not spcified, list images.',
+                          description='Operation.',
                           required = False,
                           help = 'Operation')
 
   pp = sp.add_parser('get',
                   help = 'Get details for image',
-                  aliases = ['g'])
+                )
   pp.add_argument('image',
                   help='Image to check',
                   nargs='+')
@@ -93,7 +90,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
 
   pp = sp.add_parser('list',
                   help = 'Find image',
-                  aliases = ['find','ls','f'])
+                  aliases = ['find','ls'])
   pp.add_argument('--os',
                     help='Specify the image os platform',
                     choices = [

@@ -1,5 +1,9 @@
-'''Show proxy config
+'''Show proxy configuration recipe.
 
+Displays current proxy settings (environment variables) and optionally
+performs proxy auto-configuration (PAC) lookup on Windows platforms.
+
+Registered as ``show-proxy-cfg`` (aliases ``spc``, ``showproxy``).
 '''
 
 import argparse
@@ -11,6 +15,7 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 from scullery import parsers
+from . import proxycfg
 
 
 def show_proxy(autocfg:bool, debug:bool = False) -> None:
@@ -35,6 +40,10 @@ def run(args:argparse.Namespace):
   show_proxy(args.autocfg, args.debug)
 
 def parser(subp):
+  '''Register the ``show-proxy-cfg`` sub-command.
+
+  :param subp: The argparse sub-parsers group.
+  '''
   pr = subp.add_parser('show-proxy-cfg',
             help = 'Show proxy auto configuration',
             aliases = ['spc','showproxy'])

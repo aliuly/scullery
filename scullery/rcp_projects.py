@@ -70,9 +70,9 @@ try:
 except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
-from scullery import cloud
-from scullery import formatters
-from scullery import parsers
+from . import parsers
+from . import clouds
+from . import formatters
 
 RE_PRJSIG = re.compile(r'^-- \S+ created by \S+ using scullery -- project:(\S+)($|\|)')
 
@@ -86,7 +86,7 @@ COLUMNS: formatters.Columns = [
 
 def add_prj(args: argparse.Namespace) -> None:
   '''Create a new project'''
-  cc = cloud()
+  cc = clouds.session(args)
 
   desc = f'-- Project created by {os.getlogin()} using scullery'
   if args.description is not None:
@@ -105,7 +105,7 @@ def add_prj(args: argparse.Namespace) -> None:
 
 def list_prj(args: argparse.Namespace) -> None:
   '''List all projects with details'''
-  cc = cloud()
+  cc = clouds.session(args)
   data = []
   for p in cc.iam.projects():
     details = cc.iam.get_project_details(p['id'])
@@ -120,7 +120,7 @@ def list_prj(args: argparse.Namespace) -> None:
 
 def get_prj(args: argparse.Namespace) -> None:
   '''Show detailed info for one or more projects'''
-  cc = cloud()
+  cc = clouds.session(args)
   grps = cc.iam.groups()
   for prj_name in args.project:
     prjlst = cc.iam.projects(name=args.project)
@@ -159,7 +159,7 @@ def get_prj(args: argparse.Namespace) -> None:
 
 def del_prj(args: argparse.Namespace) -> None:
   '''Delete one or more projects (checks for active resources)'''
-  cc = cloud()
+  cc = clouds.session(args)
   for prjname in args.name:
     try:
       prjdat = cc.iam.projects(prjname)
@@ -208,7 +208,7 @@ def del_prj(args: argparse.Namespace) -> None:
 
 def grant_prj(args: argparse.Namespace) -> None:
   '''Grant a role to a group on a project'''
-  cc = cloud()
+  cc = clouds.session(args)
 
   role = args.grants[0]
   group = None
@@ -253,7 +253,7 @@ def grant_prj(args: argparse.Namespace) -> None:
 
 def revoke_prj(args: argparse.Namespace) -> None:
   '''Revoke a role from a group on a project'''
-  cc = cloud()
+  cc = clouds.session(args)
 
   role = args.revokes[0]
   group = None
@@ -300,12 +300,12 @@ def parser(subp: argparse.ArgumentParser) -> None:
   '''Register the ``project`` sub-parser'''
   pr = subp.add_parser('project',
                         help = 'Project Management service',
-                        aliases = ['projects', 'prj','p'])
+                        aliases = ['prj'])
   pr.set_defaults(recipe_cb = list_prj)
   formatters.add_format_arg(pr)
 
   sp = pr.add_subparsers(title='op',
-                          description='Operation.  If not spcified, list projects.',
+                          description='Operation.  If not specified, list projects.',
                           required = False,
                           help = 'Operation')
 

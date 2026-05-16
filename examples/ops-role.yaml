@@ -11,4 +11,6 @@
   - 'ecs:*:stop*'
   - 'ecs:*:start*'
   - 'ecs:*:reboot*'
+  - 'ims:*:list'
+  - 'ims:*:get'
   Effect: Allow

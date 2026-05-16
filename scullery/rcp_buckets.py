@@ -39,9 +39,9 @@ try:
 except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
-from scullery import cloud
-from scullery import formatters
-from scullery import parsers
+from . import clouds
+from . import formatters
+from . import parsers
 
 
 # ── Column definitions ─────────────────────────────────────────────
@@ -61,8 +61,8 @@ def _list_buckets(args: argparse.Namespace,
     :param args:        Parsed arguments (uses *format*, *list_tags*).
     :param tag_filters: Optional dict of ``{key: value}`` to filter by.
     '''
-    cc = cloud(scoped=True)
-    data = cc.obs.list()
+    cc = clouds.s3session(args)
+    data = cc.bucket.buckets()
 
     # Format creation_date to just the date part.
     for bucket in data:
@@ -74,7 +74,7 @@ def _list_buckets(args: argparse.Namespace,
     # Always fetch tags for every bucket.
     for bucket in data:
         try:
-            tags = cc.obs.get_tagging(bucket['name'])
+            tags = cc.bucket.get_tagging(bucket['name'])
             bucket['tags'] = {t['key']: t['value'] for t in tags}
         except Exception:
             bucket['tags'] = {}
@@ -132,15 +132,15 @@ def list_buckets_filtered(args: argparse.Namespace) -> None:
 
 def create_bucket(args: argparse.Namespace) -> None:
     '''Create an OBS bucket'''
-    cc = cloud(scoped=True)
-    cc.obs.create(args.name, location=args.location)
+    cc = clouds.s3session(args)
+    cc.bucket.create(args.name, location=args.location)
     print(f'Bucket "{args.name}" created.')
 
 
 def delete_bucket(args: argparse.Namespace) -> None:
     '''Delete an OBS bucket'''
-    cc = cloud(scoped=True)
-    cc.obs.delete(args.name)
+    cc = clouds.s3session(args)
+    cc.bucket.delete(args.name)
     print(f'Bucket "{args.name}" deleted.')
 
 
@@ -166,18 +166,18 @@ def show_tags(args: argparse.Namespace) -> None:
     When *args.tag* is provided (one or more ``key=value`` pairs), the
     tags are replaced.  Otherwise the current tags are displayed.
     '''
-    cc = cloud(scoped=True)
+    cc = clouds.s3session(args)
 
     # If key=value pairs given, switch to set mode.
     if args.tag:
         tags = [_parse_kvp(kvp) for kvp in args.tag]
         tag_dicts = [{'key': k, 'value': v} for k, v in tags]
-        cc.obs.set_tagging(args.name, tag_dicts)
+        cc.bucket.set_tagging(args.name, tag_dicts)
         print(f'Tags set on bucket "{args.name}".')
         return
 
     # Otherwise display current tags.
-    tags = cc.obs.get_tagging(args.name)
+    tags = cc.bucket.get_tagging(args.name)
 
     if args.format == 'terminal':
         if not tags:
@@ -191,15 +191,15 @@ def show_tags(args: argparse.Namespace) -> None:
 
 def delete_tags(args: argparse.Namespace) -> None:
     '''Delete tags from a bucket'''
-    cc = cloud(scoped=True)
+    cc = clouds.s3session(args)
 
     if args.all:
-        cc.obs.delete_tagging(args.name)
+        cc.bucket.delete_tagging(args.name)
         print(f'All tags removed from bucket "{args.name}".')
         return
 
     # Read current tags, remove matching keys, write back.
-    current = cc.obs.get_tagging(args.name)
+    current = cc.bucket.get_tagging(args.name)
     keys_to_remove = set(args.key)
     remaining = [t for t in current if t['key'] not in keys_to_remove]
 
@@ -207,57 +207,9 @@ def delete_tags(args: argparse.Namespace) -> None:
         print(f'None of the specified keys found on bucket "{args.name}".')
         return
 
-    cc.obs.set_tagging(args.name, remaining)
+    cc.bucket.set_tagging(args.name, remaining)
     removed = len(current) - len(remaining)
     print(f'Removed {removed} tag(s) from bucket "{args.name}".')
-
-
-# ── Access helpers ──────────────────────────────────────────────────
-
-def _resolve_principal(cc, who: str) -> tuple[str, str]:
-    '''Resolve an IAM user name to *(principal_type, principal_arn)*.
-
-    The OTC OBS bucket policy API (like AWS S3) does **not** support IAM
-    groups as policy principals.  If *who* matches a group instead of a
-    user, an error is raised.
-
-    :param cc:  An :class:`~scullery.api.ApiSession`.
-    :param who: IAM user name.
-    :returns:   ``(type, arn)`` where *type* is always ``'user'``.
-    :raises SystemExit: If *who* cannot be resolved.
-    '''
-    # IAM lookups need an unscoped session.
-    iam_cc = cloud(scoped=False)
-    domain_id = ''
-
-    # Try as user.
-    try:
-        users = iam_cc.iam.users(who)
-        if len(users) == 1:
-            domain_id = users[0].get('domain_id', '')
-            if domain_id:
-                urn = cc.obs._principal_urn(domain_id, 'user', who)
-                return 'user', urn
-    except Exception:
-        pass
-
-    # Try as group (only to give a better error message).
-    try:
-        groups = iam_cc.iam.groups(who)
-        if len(groups) == 1:
-            sys.stderr.write(
-                f'[error] "{who}" is an IAM group, but OBS bucket policies '
-                f'do not support group principals.\n'
-                f'       Grant access to individual IAM users instead.\n'
-            )
-            sys.exit(1)
-    except Exception:
-        pass
-
-    sys.stderr.write(
-        f'[error] Could not resolve "{who}" to an IAM user.\n'
-    )
-    sys.exit(1)
 
 
 # ── Access commands ────────────────────────────────────────────────
@@ -272,8 +224,8 @@ def show_access(args: argparse.Namespace) -> None:
         return
 
     # Show the current policy.
-    cc = cloud(scoped=True)
-    policy = cc.obs.get_policy(args.name)
+    cc = clouds.s3session(args)
+    policy = cc.bucket.get_policy(args.name)
 
     if args.format == 'terminal':
         stmts = policy.get('Statement', [])
@@ -301,9 +253,9 @@ def grant_access(args: argparse.Namespace) -> None:
     if not args.who or not args.permission:
         sys.stderr.write('[error] Usage: access <name> grant <who> <perm>\n')
         sys.exit(1)
-    cc = cloud(scoped=True)
+    cc = clouds.s3session(args)
     ptype, principal_urn = _resolve_principal(cc, args.who)
-    cc.obs.grant_policy(args.name, principal_urn, args.permission.upper())
+    cc.bucket.grant_policy(args.name, principal_urn, args.permission.upper())
     print(f'Granted "{args.permission.upper()}" on "{args.name}" to {ptype} "{args.who}".')
 
 
@@ -312,9 +264,9 @@ def revoke_access(args: argparse.Namespace) -> None:
     if not args.who or not args.permission:
         sys.stderr.write('[error] Usage: access <name> revoke <who> <perm>\n')
         sys.exit(1)
-    cc = cloud(scoped=True)
+    cc = clouds.s3session(args)
     ptype, principal_urn = _resolve_principal(cc, args.who)
-    cc.obs.revoke_policy(args.name, principal_urn, args.permission.upper())
+    cc.bucket.revoke_policy(args.name, principal_urn, args.permission.upper())
     print(f'Revoked "{args.permission.upper()}" on "{args.name}" from {ptype} "{args.who}".')
 
 
@@ -324,7 +276,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
     '''Register the ``bucket`` sub-parser'''
     pr = subp.add_parser('bucket',
                          help='Object Storage Bucket management',
-                         aliases=['obs', 'buckets'])
+                       )
     pr.set_defaults(recipe_cb=list_buckets)
     formatters.add_format_arg(pr)
 
@@ -369,7 +321,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
     # -- tag -------------------------------------------------------------
     pp = sp.add_parser('tag',
                        help='Show or set tags on a bucket',
-                       aliases=['tags'])
+                     )
     pp.add_argument('name', help='Bucket name')
     pp.add_argument('tag',
                     nargs='*',
@@ -394,7 +346,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
     # -- access ----------------------------------------------------------
     pp = sp.add_parser("access",
                        help="Manage bucket access policy (IAM users/groups)",
-                       aliases=["policy"])
+                       aliases=["policy",'pol'])
     pp.add_argument("name", help="Bucket name")
     pp.add_argument("op", nargs="?",
                     choices=["grant", "revoke"],

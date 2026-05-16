@@ -4,6 +4,14 @@
 pyyaml
 requests
 
+# minis3
+# git+https://github.com/TheGU/minis3.git@v1.0.2
+git+https://github.com/alejandroliu/minis3.git@main
+
+# Custom libraries
+git+https://github.com/TortugaLabs/mypielib.git@main
+git+https://github.com/aliuly/tcurl.git@main
+
 # QA stuff
 ruff
 py-cyclo

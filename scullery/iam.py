@@ -309,8 +309,6 @@ class Iam:
     '''
     if context is None:
       q = self.domains()
-      for d in q:
-        if d['name'] == self.session.domain_name: return d['id']
       if len(q) > 0: return q[0]['id']
     q = self.projects(context)
     if len(q) == 0: raise KeyError(f'Unable to match "{context}"')

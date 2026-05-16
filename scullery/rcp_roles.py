@@ -73,10 +73,10 @@ try:
 except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
-from scullery import cloud
-from scullery import formatters
-from scullery import parsers
-from scullery import usergroup
+from . import clouds
+from . import formatters
+from . import parsers
+from . import usergroup
 
 
 # Columns for the list (default table) view.
@@ -129,7 +129,7 @@ def dump_roles(roles:list) -> None:
 
 def list_cc_roles(args: argparse.Namespace) -> None:
   '''List custom roles'''
-  cc = cloud()
+  cc = clouds.session(args)
   data = cc.iam.custom_roles()
   for r in data:
     r.setdefault('description', '')
@@ -146,7 +146,7 @@ def list_cc_roles(args: argparse.Namespace) -> None:
 
 def del_role(args: argparse.Namespace) -> None:
   '''Delete one or more custom roles'''
-  cc = cloud()
+  cc = clouds.session(args)
   for r in args.name:
     try:
       role = cc.iam.get_role(r)
@@ -157,7 +157,7 @@ def del_role(args: argparse.Namespace) -> None:
 
 def add_role(args: argparse.Namespace) -> None:
   '''Create a new custom role from a policy file'''
-  cc = cloud()
+  cc = clouds.session(args)
   policies = yaml.safe_load(args.policy)
 
   new_role = usergroup.add_role(cc, args.name, policy = policies,
@@ -168,7 +168,7 @@ def add_role(args: argparse.Namespace) -> None:
 
 def list_sys_roles(args: argparse.Namespace) -> None:
   '''List system (built-in) roles'''
-  cc = cloud()
+  cc = clouds.session(args)
   data = cc.iam.system_roles()
   for r in data:
     r.setdefault('description', '')
@@ -186,16 +186,16 @@ def list_sys_roles(args: argparse.Namespace) -> None:
 
 def get_role(args: argparse.Namespace) -> None:
   '''Show detailed info for one or more roles'''
-  cc = cloud()
+  cc = clouds.session(args)
   for role_name in args.role:
     role = cc.iam.get_role(role_name)
     formatters.write_single_output(role, args.format)
 
 def parser(subp: argparse.ArgumentParser) -> None:
   '''Register the ``roles`` sub-parser'''
-  pr = subp.add_parser('roles',
+  pr = subp.add_parser('role',
                         help = 'Role recipes',
-                        aliases = ['role'])
+                    )
   pr.set_defaults(recipe_cb = list_cc_roles)
   formatters.add_format_arg(pr)
   pr.add_argument('--long', '-l',
@@ -208,7 +208,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
                           help = 'Operation')
   pp = rsp.add_parser('system',
                   help = 'List system roles',
-                  aliases = ['sys', 's'])
+                  aliases = ['sys'])
   pp.set_defaults(recipe_cb = list_sys_roles)
 
   pp = rsp.add_parser('custom',
@@ -218,7 +218,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
 
   pp = rsp.add_parser('get',
                   help = 'Get details for role',
-                  aliases = ['g'])
+                  )
   pp.add_argument('role',
                   help='Role to look-up',
                   nargs='+')
@@ -227,7 +227,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
 
   pp = rsp.add_parser('add',
                   help = 'Add role',
-                  aliases = ['new','create','a','n','c'])
+                  aliases = ['new','create'])
   pp.add_argument('-d','--description','--desc', dest = 'description',
                   help = 'Description for this role')
   pp.add_argument('-p','--project','--proj', dest = 'project',
@@ -243,7 +243,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
 
   pp = rsp.add_parser('del',
                   help = 'Delete role',
-                  aliases = ['rm', 'd','rr'])
+                  aliases = ['rm'])
   pp.add_argument('name',
                   nargs='+',
                   help='Role name to delete')

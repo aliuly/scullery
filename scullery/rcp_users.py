@@ -88,10 +88,11 @@ try:
 except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
-from scullery import cloud
-from scullery import formatters
-from scullery import parsers
-from scullery import usergroup
+from . import parsers
+from . import clouds
+from . import formatters
+from . import usergroup
+
 
 
 # Columns for the list (default table) view.
@@ -103,7 +104,7 @@ COLUMNS: formatters.Columns = [
 
 def mod_group(args: argparse.Namespace) -> None:
   '''Add or remove a user from a group'''
-  cc = cloud()
+  cc = clouds.session(args)
   q = cc.iam.groups(args.group)
   if len(q) != 1:
     sys.stderr.write(f'Unmatched group {args.group}\n')
@@ -123,7 +124,7 @@ def mod_group(args: argparse.Namespace) -> None:
 
 def list_users(args: argparse.Namespace) -> None:
   '''List all users'''
-  cc = cloud()
+  cc = clouds.session(args)
   data = cc.iam.users()
   # Ensure description key exists for every user (current code did this)
   for u in data:
@@ -133,7 +134,7 @@ def list_users(args: argparse.Namespace) -> None:
 
 def get_user(args: argparse.Namespace) -> None:
   '''Show detailed info for one or more users'''
-  cc = cloud()
+  cc = clouds.session(args)
   for user_name in args.user:
     users = cc.iam.users(user_name)
     if len(users) != 1:
@@ -155,7 +156,7 @@ def get_user(args: argparse.Namespace) -> None:
 
 def add_user(args: argparse.Namespace) -> None:
   '''Create a new user'''
-  cc = cloud()
+  cc = clouds.session(args)
 
   res = usergroup.add_user(cc,
               name = args.name,
@@ -168,7 +169,7 @@ def add_user(args: argparse.Namespace) -> None:
 
 def del_user(args: argparse.Namespace) -> None:
   '''Delete one or more users'''
-  cc = cloud()
+  cc = clouds.session(args)
   for u in args.name:
     try:
       user = cc.iam.users(u)
@@ -180,7 +181,7 @@ def del_user(args: argparse.Namespace) -> None:
 
 def set_passwd(args: argparse.Namespace) -> None:
   '''Set or reset a user password'''
-  cc = cloud()
+  cc = clouds.session(args)
 
   q = cc.iam.users(args.user)
   if len(q) != 1: raise KeyError(args.user)
@@ -192,9 +193,9 @@ def set_passwd(args: argparse.Namespace) -> None:
 
 def parser(subp: argparse.ArgumentParser) -> None:
   '''Register the ``users`` sub-parser'''
-  pr = subp.add_parser('users',
+  pr = subp.add_parser('user',
                         help = 'User recipes',
-                        aliases = ['user','usr','u'])
+                        aliases = ['usr'])
   pr.set_defaults(recipe_cb = list_users)
   formatters.add_format_arg(pr)
   usp = pr.add_subparsers(title='op',
@@ -202,8 +203,8 @@ def parser(subp: argparse.ArgumentParser) -> None:
                           required = False,
                           help = 'Operation')
   pp = usp.add_parser('get',
-                  help = 'Get details for user',
-                  aliases = ['g'])
+      help = 'Get details for user',
+  )
   pp.add_argument('user',
                   help='User to look-up',
                   nargs='+')
@@ -212,7 +213,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
 
   pp = usp.add_parser('add',
                   help = 'Add user',
-                  aliases = ['new','create','a','n','c'])
+                  aliases = ['new','create'])
 
   pp.add_argument('-P','--password','--passwd', dest = 'passwd',
                   help = 'Password to use (if not specified a random password is used)')
@@ -232,7 +233,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
 
   pp = usp.add_parser('del',
                   help = 'Delete user',
-                  aliases = ['rm', 'd','rr'])
+                  aliases = ['rm'])
   pp.add_argument('name',
                   nargs='+',
                   help='User name to delete')
@@ -240,7 +241,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
 
   pp = usp.add_parser('group',
                   help = 'Modify user group membership',
-                  aliases = ['grp', 'gr'])
+                  aliases = ['grp'])
   pp.add_argument('group',
                   help='Group to modify')
   pp.add_argument('op',
@@ -252,7 +253,7 @@ def parser(subp: argparse.ArgumentParser) -> None:
 
   pp = usp.add_parser('passwd',
                       help = 'set/reset user password',
-                      aliases = [ 'reset-passwd', 'password', 'set-passwd', 'pass' ])
+                      aliases = [ 'reset-passwd', 'password', 'set-passwd'])
   pp.add_argument('-S', '--chg-pwd', dest = 'set_pwd',
                       help = 'Ask password to be changed on first login',
                       action = 'store_true', default = False)
@@ -262,9 +263,5 @@ def parser(subp: argparse.ArgumentParser) -> None:
                   nargs='?',
                   help='Password to set (if not specify will use a random string)')
   pp.set_defaults(recipe_cb = set_passwd)
-
-
-
-
 
 parsers.register_parser('users',parser)

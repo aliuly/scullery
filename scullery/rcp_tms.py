@@ -40,8 +40,8 @@ try:
 except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
-from scullery import cloud
-from scullery import parsers
+from . import clouds
+from . import parsers
 
 class C:
   ADD = '--add'
@@ -67,14 +67,14 @@ def run(args:argparse.Namespace) -> None:
   '''Tag management (verbs: <none>, add, del)'''
 
   if args.mode is None:
-    cc = cloud()
+    cc = clouds.session(args)
     for tag in cc.tms.tags():
       print(tag['key'],'=',tag['value'])
   elif args.mode == C.ADD:
     if not len(args.kvp):
       sys.stderr.write('Error: No key value pairs specified\n')
       exit(72)
-    cc = cloud()
+    cc = clouds.session(args)
     for kvp in args.kvp:
       kk,vv = kvp_split(kvp)
       cc.tms.create(kk,vv)
@@ -82,7 +82,7 @@ def run(args:argparse.Namespace) -> None:
     if not len(args.kvp):
       sys.stderr.write('Error: No key value pairs specified\n')
       exit(72)
-    cc = cloud()
+    cc = clouds.session(args)
     for kvp in args.kvp:
       kk,vv = kvp_split(kvp)
       cc.tms.delete(kk,vv)
@@ -91,7 +91,7 @@ def run(args:argparse.Namespace) -> None:
 
 
 def parser(subp):
-  pr = subp.add_parser('tags',
+  pr = subp.add_parser('tag',
                         help = 'Tag management service',
                         aliases = ['tms'])
   grp = pr.add_mutually_exclusive_group(required = False)

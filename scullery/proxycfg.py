@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-''' Proxy configuration options '''
+'''Proxy auto-configuration support.
+
+Supports reading proxy settings from the Windows registry
+(``AutoConfigURL``), fetching and parsing PAC (Proxy Auto-Config) scripts,
+and setting the ``http_proxy`` / ``https_proxy`` environment variables
+accordingly.
+
+On non-Windows platforms the lookup functions return ``None`` gracefully.
+'''
 try:
   import winreg
   import requests

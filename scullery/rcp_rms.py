@@ -34,9 +34,9 @@ try:
 except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
-from scullery import cloud
-from scullery import formatters
-from scullery import parsers
+from . import clouds
+from . import formatters
+from . import parsers
 
 
 # Ordered list of (dict_key, column_label) pairs shown in the output.
@@ -51,7 +51,7 @@ COLUMNS: formatters.Columns = [
 
 def run(args: argparse.Namespace) -> None:
   '''Resource management (specify a project to limit list)'''
-  cc = cloud()
+  cc = clouds.session(args)
   resources = cc.rms.resources(args.project, args.type)
   rows = formatters.extract_rows(resources, COLUMNS)
   formatters.write_output(rows, COLUMNS, args.format)
@@ -59,9 +59,9 @@ def run(args: argparse.Namespace) -> None:
 
 def parser(subp: argparse.ArgumentParser) -> None:
   '''Register the ``resources`` sub-parser'''
-  pr = subp.add_parser('resources',
+  pr = subp.add_parser('rms',
                        help='Resource management',
-                       aliases=['rms', 'rsc'])
+                     )
   pr.add_argument('-m', '--project',
                   help='Match project',
                   default=None)

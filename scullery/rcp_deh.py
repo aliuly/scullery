@@ -24,9 +24,9 @@ try:
 except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
-from scullery import cloud
-from scullery import formatters
-from scullery import parsers
+from . import clouds
+from . import formatters
+from . import parsers
 
 
 # Columns for the list (default table) view.
@@ -38,7 +38,7 @@ COLUMNS: formatters.Columns = [
 
 def run(args: argparse.Namespace) -> None:
   '''List available dedicated host types'''
-  cc = cloud(scoped = True)
+  cc = clouds.session(args, scoped = True)
   if isinstance(args.az,str):
     if args.az.isdigit():
       args.az = int(args.az)
