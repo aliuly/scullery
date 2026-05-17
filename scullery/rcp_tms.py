@@ -1,33 +1,10 @@
 '''
-## Tag recipes
-
 These recipes are used to create and delete pre-defined tags.
 
-## list
-
-List currently pre-defined tags:
-
-```bash
-scullery tag
-```
-
-## add
-
-Define pre-defined tags
-
-```bash
-scullery tag add key=value project=one project=two
-```
-
-## del
-
-Delete pre-defined tags
-
-```bash
-scullery tag del key=value project=one project=two
-```
-
-***
+| Recipe | Description |
+|  |  List currently pre-defined tags |
+| add | key=value project=one project=two | Define new pre-defined tags |
+" del | key=value project=one project=two | Delete pre-defined tags |
 '''
 #
 # TMS recipes
@@ -89,6 +66,11 @@ def run(args:argparse.Namespace) -> None:
   else:
     raise RuntimeError('Un-implemented mode')
 
+def sphinxarg() -> argparse.ArgumentParser:
+  return parsers.sphinxarg_common(
+        sys.modules[__name__].__doc__,
+        parser,
+  )
 
 def parser(subp):
   pr = subp.add_parser('tag',

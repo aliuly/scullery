@@ -2,41 +2,15 @@
 # Roles recipe
 #
 '''
-## Role recipes
-
 Implements role recipes.
 
-## list roles
-
-List custom roles
-
-```bash
-scullery role
-```
-## list SYSTEM roles
-
-List system roles.  These roles are built-in into the cloud infrastructure.
-
-```bash
-scullery role system
-```
-
-## get role details
-
-Get the role details.
-
-```bash
-scullery role get role_name
-```
-## add custom role
-
-Create a new custom role
-
-```bash
-scullery role add role_name [yaml_file]
-```
-Create a role using a `yaml_file`.  If no `yaml_file` is specified
-it will read definition from `stdin`.
+| Recipe | Description |
+|-----|-------------|
+|  | List custom roles |
+| system | List system roles.  These roles are built-in into the cloud infrastructure. |
+|get role_name | Get the role details. |
+| add role_name [yaml_file] | Create a role using a `yaml_file`.  If no `yaml_file` is specified it will read definition from `stdin`. |
+| del role_name | Delete a custom role |
 
 Example YAML:
 
@@ -47,19 +21,13 @@ Example YAML:
   - 'ecs:*:stop*'
   - 'ecs:*:start*'
   - 'ecs:*:reboot*'
+  - 'ims:*:list'
+  - 'ims:*:get'
   Effect: Allow
 ```
 
 See {py:obj}`scullery.iam.Iam.new_role` for more details.
 
-## delete custom role
-
-Delete a custom role
-
-```bash
-scullery role del role_name
-```
-***
 '''
 
 import argparse
@@ -190,6 +158,12 @@ def get_role(args: argparse.Namespace) -> None:
   for role_name in args.role:
     role = cc.iam.get_role(role_name)
     formatters.write_single_output(role, args.format)
+
+def sphinxarg() -> argparse.ArgumentParser:
+  return parsers.sphinxarg_common(
+        sys.modules[__name__].__doc__,
+        parser,
+  )
 
 def parser(subp: argparse.ArgumentParser) -> None:
   '''Register the ``roles`` sub-parser'''

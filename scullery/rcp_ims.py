@@ -2,19 +2,12 @@
 # IMS recipes
 #
 '''
-## Image management recipes
+Image management service
 
 This recipe is used to list images
 
-```bash
-scullery ims [key=value]
-```
+[API Docs](https://docs.otc.t-systems.com/image-management-service/api-ref/native_openstack_apis/image_native_openstack_apis/querying_images_native_openstack_api.html#en-us-topic-0060804959-table33420935171457)
 
-If no `key=value` is specified it should list all images.
-If key=value pairs are specified, they will be used to limit the list.
-
-https://docs.otc.t-systems.com/image-management-service/api-ref/native_openstack_apis/image_native_openstack_apis/querying_images_native_openstack_api.html#en-us-topic-0060804959-table33420935171457
-***
 '''
 
 import argparse
@@ -62,6 +55,12 @@ def get_ims(args: argparse.Namespace) -> None:
   for image in args.image:
     for found in cc.ims.images(name = image):
       formatters.write_single_output(found, args.format)
+
+def sphinxarg() -> argparse.ArgumentParser:
+  return parsers.sphinxarg_common(
+        sys.modules[__name__].__doc__,
+        parser,
+  )
 
 
 def parser(subp: argparse.ArgumentParser) -> None:

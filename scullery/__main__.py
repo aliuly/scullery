@@ -14,10 +14,12 @@ from . import api
 from . import parsers
 
 from . import rcp_buckets
+from . import rcp_cfgwiz
 from . import rcp_deh
 from . import rcp_ecs
 from . import rcp_groups
 from . import rcp_ims
+from . import rcp_login
 from . import rcp_projects
 from . import rcp_rms
 from . import rcp_roles
@@ -42,6 +44,7 @@ def main(argv:list[str]) -> None:
     cli.print_help()
   else:
     args.recipe_cb(args)
+
 
 ###################################################################
 #

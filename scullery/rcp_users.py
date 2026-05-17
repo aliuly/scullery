@@ -1,77 +1,17 @@
 '''
-## User recipes
 
 This module implements user related recipes.  The following
 verbs are recognized.
 
-## list users
+| recipe | descripiton |
+|---|----|
+|  | List cloud users |
+| get username | Get user details for a given user |
+| add [options] | Create user |
+| del username | Delete user |
+| group groupname add username | Add user to group |
+| group groupname del username | Remove user from group |
 
-This will list cloud users.
-
-```bash
-scullery usr
-```
-
-## get
-
-Get user details for a given user:
-
-```bash
-scullery usr get username
-```
-
-## add
-
-Create user
-
-```bash
-scullery usr add [options]
-```
-
-Options:
-
-- `--name=username` : User's name, if not specified a random user name
-  will be generated.
-- `--password=text` : User's password.  If not specified a random
-  password will be generated.
-- `--email=address` : Default e-mail address for this user
-- `--desc=description` : Description for user
-- `--group=groupname` : Make the new user member of `groupname`.  This
-  option can be used multiple times.
-
-## del
-
-Delete user
-
-```bash
-scullery usr del username
-```
-
-## group
-
-Use this verb to modify the groups this user belongs to.
-
-### group add
-
-Make this user a member of a group
-
-```bash
-scullery usr groupname add username
-```
-
-This will make `username` a member of `groupname`.
-
-### group del
-
-Remove this user from a group
-
-```bash
-scullery usr groupname del username
-```
-
-This will remove `username` from `groupname`.
-
-***
 '''
 #
 # Users recipe
@@ -89,9 +29,9 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 from . import parsers
-from . import clouds
 from . import formatters
 from . import usergroup
+from . import clouds
 
 
 
@@ -190,6 +130,13 @@ def set_passwd(args: argparse.Namespace) -> None:
     args.password = cc.iam.gen_user_password()
     print('password', args.password)
   cc.iam.reset_passwd( user_id, args.password, args.set_pwd)
+
+def sphinxarg() -> argparse.ArgumentParser:
+  return parsers.sphinxarg_common(
+        sys.modules[__name__].__doc__,
+        parser,
+  )
+
 
 def parser(subp: argparse.ArgumentParser) -> None:
   '''Register the ``users`` sub-parser'''

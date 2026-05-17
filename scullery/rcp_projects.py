@@ -2,39 +2,16 @@
 # Project recipe
 #
 '''
-## Project recipes
+IAM Projects recipes
 
-## list projects
-
-Get a list of projects
-
-```bash
-scullery prj
-```
-
-## get project details
-
-Get details of a project
-
-```bash
-scullery prj get region_projectname
-```
-
-## add project
-
-Create a new project
-
-```bash
-scullery prj add region_projectname [description]
-```
-
-## del project region_projectname
-
-Delete an existing project
-
-```bash
-scullery prj del region_projectname [--force]
-```
+| Recipe | Description |
+|-----|-------------|
+| list | Get a list of projects |
+| get |  Get details of a project |
+| add | Create a new project |
+| del | Delete an existing project |
+| grant | Grants a role to a group on a project |
+| revoke | Revokes a role from a group on a project |
 
 **NOTE** Project deleletion takes more than 30 minutes.
 
@@ -42,22 +19,6 @@ This recipe will check using Resource Management that no
 active resources are assigned to this project.  Use `--force`
 to ignore.
 
-## grant permissions on project
-
-Grants a role to a group on a project
-
-```bash
-scullery prj grant rolename on region_projectname to groupname
-```
-
-## revoke permissions on project
-
-Revokes a role from a group on a project
-
-```bash
-scullery prj revoke rolename on region_projectname from groupname
-```
-***
 '''
 import argparse
 import json
@@ -71,8 +32,8 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 from . import parsers
-from . import clouds
 from . import formatters
+from . import clouds
 
 RE_PRJSIG = re.compile(r'^-- \S+ created by \S+ using scullery -- project:(\S+)($|\|)')
 
@@ -295,6 +256,12 @@ def revoke_prj(args: argparse.Namespace) -> None:
   print('project',project, prj_id)
   cc.iam.revoke_project_group_perms(prj_id, grp_id, role_id)
 
+
+def sphinxarg() -> argparse.ArgumentParser:
+  return parsers.sphinxarg_common(
+        sys.modules[__name__].__doc__,
+        parser,
+  )
 
 def parser(subp: argparse.ArgumentParser) -> None:
   '''Register the ``project`` sub-parser'''

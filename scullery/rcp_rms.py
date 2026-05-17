@@ -2,32 +2,30 @@
 # RMS recipes
 #
 '''
-## Resource management recipes
+Resource management recipes
 
-This recipe is used to list resources
-
-```bash
-scullery rms [projectname]
-```
+This recipe is used to list resources optionally filtered by
+_projectname_.
 
 If no `projectname` is specified it should list all resources.  If
 `projectname` is specified it will list all resources related
 to the given project.
 
-Output format can be controlled with ``-f`` / ``--format``:
+Output format can be controlled with `-f` / `--format`:
 
 | Format       | Description                         |
 |--------------|-------------------------------------|
-| ``terminal`` | Aligned columns for your terminal   |
-| ``json``     | JSON array of resources             |
-| ``csv``      | Comma-separated values              |
-| ``tsv``      | Tab-separated values                |
-| ``markdown`` | Markdown / pipe table               |
+| `terminal` | Aligned columns for your terminal   |
+| `json`     | JSON array of resources             |
+| `csv`      | Comma-separated values              |
+| `tsv`      | Tab-separated values                |
+| `markdown` | Markdown / pipe table               |
 
-***
+
 '''
 
 import argparse
+import sys
 
 try:
   from icecream import ic
@@ -55,6 +53,12 @@ def run(args: argparse.Namespace) -> None:
   resources = cc.rms.resources(args.project, args.type)
   rows = formatters.extract_rows(resources, COLUMNS)
   formatters.write_output(rows, COLUMNS, args.format)
+
+def sphinxarg() -> argparse.ArgumentParser:
+  return parsers.sphinxarg_common(
+        sys.modules[__name__].__doc__,
+        parser,
+  )
 
 
 def parser(subp: argparse.ArgumentParser) -> None:

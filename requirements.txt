@@ -3,6 +3,9 @@
 #
 pyyaml
 requests
+questionary
+ruamel.yaml
+configupdater
 
 # minis3
 # git+https://github.com/TheGU/minis3.git@v1.0.2

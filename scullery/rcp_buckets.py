@@ -2,33 +2,32 @@
 # Bucket / OBS recipes
 #
 '''
-## Object Storage Bucket recipes
+Object Storage Bucket recipes
 
 List, create, delete, manage tags and access policies for OBS buckets.
 
-```bash
-scullery buckets                                      # list all buckets (with tags)
-scullery buckets ls                                   # same as above
-scullery buckets ls env=prod                          # list buckets filtered by tag
-scullery buckets ls env=prod --tag env                # filtered, showing tag column
-scullery buckets create <name>                        # create a new bucket
-scullery buckets delete <name>                        # delete a bucket
-scullery buckets tag <name>                           # list bucket tags
-scullery buckets tag <name> key=value ...             # set (replace) tags
-scullery buckets untag <name> key ...                 # delete tags by key
-scullery buckets untag --all <name>                   # delete all tags
-scullery buckets access <name>                        # show access policy
-scullery buckets access <name> grant <who> <perm>     # grant access (IAM user/group)
-scullery buckets access <name> revoke <who> <perm>    # revoke access (IAM user/group)
-```
+| Recipe | Description |
+|--------|-------------|
+| | list all buckets (with tags) |
+| ls | same as above |
+| ls env=prod  | list buckets filtered by tag |
+| ls env=prod --tag env  | filtered, showing tag column |
+| create <name> |   create a new bucket |
+| delete <name> | delete a bucket |
+| tag <name>  |list bucket tags |
+| tag <name> key=value ... | set (replace) tags |
+| untag <name> key ... | delete tags by key |
+| untag --all <name> | delete all tags |
+| access <name> | show access policy |
+| access <name> grant <who> <perm> | grant access (IAM user/group) |
+| access <name> revoke <who> <perm> | revoke access (IAM user/group) |
 
 Access is managed via bucket policies.  Only IAM **users** are supported
 as policy principals — IAM groups are **not** supported by the OBS/S3 API.
 
-The bucket API automatically acquires temporary AK/SK credentials if
+This recipe automatically acquires temporary AK/SK credentials if
 the session uses password or token authentication.
 
-***
 '''
 
 import argparse
@@ -271,6 +270,12 @@ def revoke_access(args: argparse.Namespace) -> None:
 
 
 # ── Parser ─────────────────────────────────────────────────────────
+
+def sphinxarg() -> argparse.ArgumentParser:
+  return parsers.sphinxarg_common(
+        sys.modules[__name__].__doc__,
+        parser,
+  )
 
 def parser(subp: argparse.ArgumentParser) -> None:
     '''Register the ``bucket`` sub-parser'''

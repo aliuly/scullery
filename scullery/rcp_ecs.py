@@ -2,18 +2,18 @@
 # ECS recipes
 #
 '''
-## Elastic Cloud Server recipes
+Elastic Cloud Server recipes
 
 List, inspect and control ECS servers, and query available flavors.
 
-```bash
-scullery ecs                   # list servers in current project
-scullery ecs get <server>      # server details
-scullery ecs flavors           # list available flavors
-scullery ecs start <server>    # start a server
-scullery ecs stop   <server>   # stop (soft) a server
-scullery ecs reboot <server>   # reboot (soft) a server
-```
+| Recipe | Description |
+|-----|-------------|
+|  | list servers in current project |
+| get <server> | server details |
+| flavors  | list available flavors |
+| start <server> | start a server |
+| stop   <server> |stop (soft) a server |
+| reboot <server>  | reboot (soft) a server |
 
 Use ``-f`` / ``--force`` with ``stop`` and ``reboot`` for a hard
 shutdown / hard reboot.
@@ -21,10 +21,11 @@ shutdown / hard reboot.
 The ``flavors`` command accepts ``--ram`` (minimum GB, converted to MB
 for the API) and ``--disk`` (minimum GB).
 
-***
+
 '''
 
 import argparse
+import sys
 
 try:
   from icecream import ic
@@ -218,6 +219,11 @@ def reboot_ecs(args: argparse.Namespace) -> None:
 
 
 # ── Parser ─────────────────────────────────────────────────────────
+def sphinxarg() -> argparse.ArgumentParser:
+  return parsers.sphinxarg_common(
+        sys.modules[__name__].__doc__,
+        parser,
+  )
 
 def parser(subp: argparse.ArgumentParser) -> None:
   '''Register the ``ecs`` sub-parser'''

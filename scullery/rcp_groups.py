@@ -2,43 +2,16 @@
 # Group recipe
 #
 '''
-## Group recipes
+Group recipes
 
-Group recipe implementations
 
-## list groups
+| Recipe | Description |
+|-----|-------------|
+|  | List groups |
+| get groupname |  Get details related to a group.  This will show group definitions,  assigned domain roles and member users. |
+| add groupname [description] |  Create a new group |
+| del groupname |  Delete a group |
 
-List groups
-
-```bash
-scullery grp
-```
-
-## get group details
-
-Get details related to a group.  This will show group definitions,
-assigned domain roles and member users.
-
-```bash
-scullery grp get groupname
-```
-
-## add group
-
-Create a new group
-
-```bash
-scullery grp add groupname [description]
-```
-
-## del group
-
-Delete a group
-
-```bash
-scullery grp del groupname
-```
-***
 '''
 import argparse
 import json
@@ -115,6 +88,13 @@ def list_groups(args: argparse.Namespace) -> None:
   cc = clouds.session(args)
   rows = formatters.extract_rows(cc.iam.groups(), COLUMNS)
   formatters.write_output(rows, COLUMNS, args.format)
+
+def sphinxarg() -> argparse.ArgumentParser:
+  return parsers.sphinxarg_common(
+        sys.modules[__name__].__doc__,
+        parser,
+  )
+
 
 def parser(subp: argparse.ArgumentParser) -> None:
   '''Register the ``groups`` sub-parser'''

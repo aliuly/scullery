@@ -28,7 +28,13 @@ from . import tms
 from . import rms
 
 from . import obs
-import minis3
+
+try:
+  import minis3
+  HAS_MINIS3 = True
+except ImportError:
+  HAS_MINIS3 = False
+
 
 # ====================================================================
 # Helpers
@@ -220,7 +226,7 @@ class ObsSession:
     self.clean_up = clean_up
 
     self.bucket = obs.Buckets(self)
-    if s3creds:
+    if HAS_MINIS3 and s3creds:
       self.s3 = minis3.Connection(**s3creds,
           endpoint = self.api_path(),
           tls = True,

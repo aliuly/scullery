@@ -122,3 +122,11 @@ def parser_factory(color:bool = False) -> argparse.ArgumentParser:
 
   return cli
 
+def sphinxarg_common(text:str, parser:Callable[None,[argparse.ArgumentParser]]) -> argparse.ArgumentParser:
+  color = { 'color': False } if sys.version_info >= (3,14) else dict()
+  tmp = argparse.ArgumentParser(prog = 'RECIPE',
+                        description = text,
+                        **color,
+                      )
+  parser(tmp.add_subparsers(title='recipe', help='Recipe to run'))
+  return tmp

@@ -2,22 +2,20 @@
 # DeH recipes
 #
 '''
-## Dedicated Host recipes
+Dedicated Host recipes
 
-List available dedicated host types.
+Lists available dedicated host types.
 
-```bash
-scullery deh AZ
-```
-
-The ``AZ`` can be a numeric index (``2``) or a full AZ name
-(``eu-de-02``).  If omitted it defaults to the first available
+When specifying the `AZ`,
+the `AZ` can be a numeric index (`2`) or a full AZ name
+(`eu-de-02`).  If omitted it defaults to the first available
 availability zone.
 
-***
+
 '''
 
 import argparse
+import sys
 
 try:
   from icecream import ic
@@ -47,6 +45,12 @@ def run(args: argparse.Namespace) -> None:
   rows = formatters.extract_rows(data, COLUMNS)
   formatters.write_output(rows, COLUMNS, args.format)
 
+
+def sphinxarg() -> argparse.ArgumentParser:
+  return parsers.sphinxarg_common(
+        sys.modules[__name__].__doc__,
+        parser,
+  )
 
 def parser(subp: argparse.ArgumentParser) -> None:
   '''Register the ``deh`` sub-parser'''

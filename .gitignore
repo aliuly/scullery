@@ -172,3 +172,4 @@ cython_debug/
 CLAUDE.md
 env
 .secrets
+*.old

@@ -14,6 +14,7 @@ import argparse
 import datetime
 import os
 import pathlib
+import requests
 import sys
 import yaml
 
@@ -219,10 +220,12 @@ def resolve_creds(
   # First check if we have valid cached credentials
   token, tk_file = resolve_from_yaml(f'clouds.{myname}.cached.token')
   expires_at, _ = resolve_from_yaml(f'clouds.{myname}.cached.expires_at')
-  if token is not None and expires_at is not None:
+  domain_id, _ = resolve_from_yaml(f'clouds.{myname}.cached.domain_id')
+  if token is not None and expires_at is not None and domain_id is not None:
     if now < expires_at:
       sys.stderr.write(f'Using token from {tk_file}\n')
       creds['token'] = token
+      creds['domain_id'] = domain_id
       return creds
     else:
       sys.stderr.write(f'Ignoring expired token in {tk_file}\n')
@@ -232,11 +235,13 @@ def resolve_creds(
   sk,_ = resolve_from_yaml(f'clouds.{myname}.cached.sk')
   session, _ = resolve_from_yaml(f'clouds.{myname}.cached.securitytoken')
   expires_at, _ = resolve_from_yaml(f'clouds.{myname}.cached.expires_at')
-  if ak is not None and sk is not None and session is not None and expires_at is not None:
+  domain_id, _ = resolve_from_yaml(f'clouds.{myname}.cached.domain_id')
+  if ak is not None and sk is not None and session is not None and expires_at is not None and domain_id is not None:
     if now < expires_at:
       creds['ak'] = ak
       creds['sk'] = sk
       creds['securitytoken'] = session
+      creds['domain_id'] = domain_id
       sys.stderr.write(f'Using Temp AK/SK from {ak_file}\n')
       return creds
     else:
@@ -266,6 +271,16 @@ def resolve_creds(
 
   # OK no good credentials found
   return None
+
+def token_details(token:str, region:str) -> dict[str,Any]:
+  # Check the type of token we are using...
+  xhdrs = tcurl.creds(token = token)
+  tcurl.add_headers(xhdrs,[f'X-Subject-Token:{token}'])
+  resp = requests.get(f'https://iam.{region}.otc.t-systems.com/v3/auth/tokens',
+        **xhdrs)
+  if resp.status_code != 200:
+    raise RuntimeError(resp.text)
+  return resp.json()['token']
 
 def s3session(args:argparse.Namespace) -> api.ObsSession:
   '''Initialize an S3/OBS session
@@ -327,7 +342,10 @@ def s3session(args:argparse.Namespace) -> api.ObsSession:
         clean_up = clean_up,
   )
 
-def session(args:argparse.Namespace, scoped=False) -> api.ApiSession:
+def session(
+    args:argparse.Namespace,
+    scoped:bool=False,
+  ) -> api.ApiSession:
   '''Initialize a session
   :param args: Command line arguments
   :param scoped: Force a session scope
@@ -343,7 +361,32 @@ def session(args:argparse.Namespace, scoped=False) -> api.ApiSession:
   ic(creds)
   clean_up = None
   if creds['token'] is not None:
-    xhdrs = tcurl.creds(token = creds['token'])
+    # OK, we are using a token.
+    details = token_details(creds['token'], creds['region'])
+    if args.project is None:
+      # OK, unscoped token needed...
+      if 'project' in details:
+        # Oh, no, this is a scoped token! ABORT!
+        raise ValueError('Scoped token provided while Unscoped requested')
+      # Otherwise, we assume unscoped!
+      token = creds['token']
+    else:
+      # OK, scoped token needed.
+      if 'project' in details:
+        # Check if the project scope matches
+        if details['project']['name'] != args.project:
+          # Scoped to the wrong project!
+          raise ValueError(f'Scope mismatch, required: {args.project}, provided {details["project"]["name"]}')
+        token = creds['token']
+      else:
+        # Assuming Unscoped token provided... re-issue with the right scope...
+        sys.stderr.write(f'Re-issuing scoped token for {args.project}\n')
+        token, _ = tcurl.login(
+            token = creds['token'],
+            project = args.project,
+        )
+        clean_up = token
+    xhdrs = tcurl.creds(token = token)
   elif creds['ak'] is not None and creds['sk'] is not None:
     # Save it but also look-up region or project
     xhdrs = tcurl.creds(
@@ -352,12 +395,15 @@ def session(args:argparse.Namespace, scoped=False) -> api.ApiSession:
           securitytoken = creds['securitytoken']
     )
     if creds['project'] is not None: # Project scope
-      project_id = tcurl.project_lookup(creds['project'], xargs, None)
+      project_id = tcurl.project_lookup(creds['project'], xhdrs, None)
       if project_id is None: raise KeyError(args.project_name)
-      tcurl.add_project_id(xargs, project_id)
+      tcurl.add_project_id(xhdrs, project_id)
     else: # Unscoped...
-      domain_id, _ = tcurl.ak_domain_lookup(args.ak, xargs, None)
-      tcurl.add_domain_id(xargs, domain_id)
+      try:
+        domain_id, _ = tcurl.ak_domain_lookup(creds['ak'], xhdrs, None)
+        tcurl.add_domain_id(xhdrs, domain_id)
+      except requests.exceptions.HTTPError as err:
+        sys.stderr.write(f'Error looking-up domain_id: {err}\n')
   elif creds['username'] is not None and creds['password'] is not None and creds['user_domain_name'] is not None:
     # Issue token and  arrange for token revokation
     token, details = tcurl.login(
@@ -378,3 +424,6 @@ def session(args:argparse.Namespace, scoped=False) -> api.ApiSession:
         project = creds['project'],
         clean_up = clean_up,
   )
+
+if __name__ == '__main__':
+  ...
