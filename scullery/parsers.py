@@ -2,6 +2,7 @@
 Used to define sub-parsers
 '''
 import argparse
+import os
 import sys
 from typing import Callable
 
@@ -45,10 +46,20 @@ def parser_factory(color:bool = False) -> argparse.ArgumentParser:
       default = False,
   )
   if sys.platform == 'win32':
-    cli.add_argument('--autocfg','-A',
+    if 'https_proxy' in os.environ:
+      autocfg_default = False
+    else:
+      autocfg_default = True
+    xgrp  = cli.add_mutually_exclusive_group()
+    xgrp.add_argument('--autocfg','-A',
         help='Use WinReg to configure proxy',
         action='store_true',
-        default = False,
+        default = autocfg_default,
+    )
+    xgrp.add_argument('--no-autocfg',
+        dest = 'autocfg',
+        help='Do Not Use WinReg to configure proxy',
+        action='store_false',
     )
   sgrp = cli.add_argument_group(
       title= 'Scoping',

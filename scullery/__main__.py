@@ -11,6 +11,7 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 
 from . import api
 from . import parsers
+from . import proxycfg
 
 from . import rcp_buckets   # noqa: F401
 from . import rcp_cfgwiz    # noqa: F401
@@ -25,8 +26,9 @@ from . import rcp_roles     # noqa: F401
 from . import rcp_tms       # noqa: F401
 from . import rcp_users     # noqa: F401
 
-# ~ from . import proxycfg
-# ~ from . import rcp_showcfg
+if sys.platform == "win32":
+  from . import rcp_showcfg # noqa: F401
+  
 
 def main(argv:list[str]) -> None:
   '''Main script entry point
@@ -35,6 +37,9 @@ def main(argv:list[str]) -> None:
   '''
   cli = parsers.parser_factory(color = True)
   args = cli.parse_args(argv)
+  
+  if sys.platform == "win32" and hasattr(args,'autocfg') and getattr(args,'autocfg'):
+    proxycfg.proxy_cfg(True)
 
   if args.debug: api.http_logging()
   # ~ if args.cloud is not None: scullery.defaults['cloud'] = args.cloud

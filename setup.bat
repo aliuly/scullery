@@ -50,4 +50,4 @@ call %VENV%\Scripts\activate.bat
 
 
 python -m pip install %pipproxy% --requirement %~dp0%requirements.txt
-python -m pip install %pipproxy% icecream
+REM ~ python -m pip install %pipproxy% icecream

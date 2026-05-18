@@ -54,7 +54,7 @@ def proxy_auto_cfg():
 
   if not resp.ok: return None, value, None
 
-  mv = re.search(r'PROXY (\d+\.\d+\.\d+\.\d+:\d+);', resp.text)
+  mv = re.search(r'PROXY (\d+\.\d+\.\d+\.\d+:\d+)', resp.text)
   proxy = mv[1] if mv else None
 
   return proxy, value, resp.text
