@@ -28,8 +28,6 @@ Usage::
 
 import json
 import xml.etree.ElementTree as ET
-from urllib.parse import urlparse, quote, urlencode, parse_qsl
-import requests
 import sys
 
 try:
@@ -569,7 +567,7 @@ class Buckets:
     :param policy: Policy dict.
     :raises RuntimeError: On API errors.
     '''
-    headers = {'Content-Type': 'application/json'}
+    headers = ['Content-Type:application/json']
     self.session.request('put', f'/{bucket}?policy',
                   headers=headers, data=json.dumps(policy))
 

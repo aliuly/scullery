@@ -55,7 +55,6 @@ class Ims:
 if __name__ == '__main__':
   import api
   import creds
-  import yaml
   cfg = creds.creds(cloud_name = 'otc-eu-de')
   ic(cfg)
   # ~ api.http_logging(1)

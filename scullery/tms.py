@@ -30,7 +30,7 @@ class Tms:
     '''
 
     resp = self.session.get(self.api_path('v1.0/predefine_tags'))
-    if resp.status_code != 200 or not 'tags' in resp.json():
+    if resp.status_code != 200 or 'tags' not in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['tags']
 

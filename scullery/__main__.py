@@ -2,7 +2,6 @@
 ''' Scullery command line
 
 '''
-import os
 import sys
 
 try:
@@ -13,18 +12,18 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 from . import api
 from . import parsers
 
-from . import rcp_buckets
-from . import rcp_cfgwiz
-from . import rcp_deh
-from . import rcp_ecs
-from . import rcp_groups
-from . import rcp_ims
-from . import rcp_login
-from . import rcp_projects
-from . import rcp_rms
-from . import rcp_roles
-from . import rcp_tms
-from . import rcp_users
+from . import rcp_buckets   # noqa: F401
+from . import rcp_cfgwiz    # noqa: F401
+from . import rcp_deh       # noqa: F401
+from . import rcp_ecs       # noqa: F401
+from . import rcp_groups    # noqa: F401
+from . import rcp_ims       # noqa: F401
+from . import rcp_login     # noqa: F401
+from . import rcp_projects  # noqa: F401
+from . import rcp_rms       # noqa: F401
+from . import rcp_roles     # noqa: F401
+from . import rcp_tms       # noqa: F401
+from . import rcp_users     # noqa: F401
 
 # ~ from . import proxycfg
 # ~ from . import rcp_showcfg

@@ -45,12 +45,11 @@ class Ecs:
                       }
     return res
 
-  def action(self, server_id:str, action:Any):
+  def action(self, server_id:str, action:Any, **kwargs):
     project_id = self.session.project_id()
     url = f'v2.1/{project_id}/servers/{server_id}/action'
     resp = self.session.get(self.api_path(url), params = kwargs)
     resp.raise_for_status()
-    data = resp.json()
 
   def servers(self, detail:bool = False, **kwargs) -> list:
     # https://docs.otc.t-systems.com/elastic-cloud-server/api-ref/native_openstack_nova_apis/lifecycle_management/querying_the_ecs_list.html#en-us-topic-0020212688
@@ -91,7 +90,6 @@ class Ecs:
 if __name__ == '__main__':
   import api
   import creds
-  import yaml
   # ~ cfg = creds.creds(cloud_name = 'otc-eu-nl')
   cfg = creds.creds(cloud_name = 'test')
   # ~ ic(cfg)

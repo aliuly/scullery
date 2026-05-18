@@ -19,7 +19,6 @@ verbs are recognized.
 import argparse
 import json
 
-import os
 import sys
 import yaml
 

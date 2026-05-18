@@ -21,7 +21,6 @@ to ignore.
 
 '''
 import argparse
-import json
 import os
 import re
 import sys
@@ -193,7 +192,7 @@ def grant_prj(args: argparse.Namespace) -> None:
         raise SyntaxError(f'Error grants: {' '.join(args.grants)}')
 
   if project is None or group is None:
-    raise SyntaxError(f'Grant requires project and group to be specified')
+    raise SyntaxError('Grant requires project and group to be specified')
 
   q = cc.iam.projects(name=project)
   if len(q) != 1: raise KeyError(project)
@@ -238,7 +237,7 @@ def revoke_prj(args: argparse.Namespace) -> None:
         raise SyntaxError(f'Error revoking: {' '.join(args.revokes)}')
 
   if project is None or group is None:
-    raise SyntaxError(f'Revoking requires project and group to be specified')
+    raise SyntaxError('Revoking requires project and group to be specified')
 
   q = cc.iam.projects(name=project)
   if len(q) != 1: raise KeyError(project)

@@ -41,7 +41,7 @@ class Iam:
     '''
     if self.sys_roles is None:
       resp = self.session.get(self.api_path('v3/roles'))
-      if resp.status_code != 200 or not 'roles' in resp.json():
+      if resp.status_code != 200 or 'roles' not in resp.json():
         raise RuntimeError(resp.text)
       self.sys_roles = resp.json()['roles']
     return self.sys_roles
@@ -57,7 +57,7 @@ class Iam:
     '''
     if self.usr_roles is None:
       resp = self.session.get(self.api_path('v3.0/OS-ROLE/roles'))
-      if resp.status_code != 200 or not 'roles' in resp.json():
+      if resp.status_code != 200 or 'roles' not in resp.json():
         raise RuntimeError(resp.text)
       self.usr_roles = resp.json()['roles']
     return self.usr_roles
@@ -111,7 +111,7 @@ class Iam:
     if isinstance(policy,list):
       policy = { 'Statement': policy, 'Version': '1.1' }
     else:
-      if not 'Version' in policy: policy['Version'] = '1.1'
+      if 'Version' not in policy: policy['Version'] = '1.1'
     resp = self.session.post(self.api_path('v3.0/OS-ROLE/roles'), json = {
       'role': {
         'display_name': display_name,
@@ -120,7 +120,7 @@ class Iam:
         'policy': policy,
       }
     })
-    if resp.status_code != 201 or not 'role' in resp.json():
+    if resp.status_code != 201 or 'role' not in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['role']
 
@@ -130,7 +130,7 @@ class Iam:
     :param role_id: role to delete
     '''
     resp = self.session.delete(self.api_path(f'v3.0/OS-ROLE/roles/{role_id}'))
-    if not resp.status_code in [200, 204]:
+    if resp.status_code not in [200, 204]:
       raise RuntimeError(resp.text if resp.text else resp.reason)
 
   def users(self, name:str|None = None) -> list:
@@ -145,7 +145,7 @@ class Iam:
     '''
     params = dict() if name is None else { 'params': { 'name': name } }
     resp = self.session.get(self.api_path('v3/users'), **params)
-    if resp.status_code != 200 or not 'users' in resp.json():
+    if resp.status_code != 200 or 'users' not in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['users']
 
@@ -157,7 +157,7 @@ class Iam:
     :raises RuntimeError: on error
     '''
     resp = self.session.get(self.api_path(f'v3/users/{usrid}/groups'))
-    if resp.status_code != 200 or not 'groups' in resp.json():
+    if resp.status_code != 200 or 'groups' not in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['groups']
 
@@ -183,7 +183,7 @@ class Iam:
     but this API does not implement them.
     '''
     resp = self.session.post(self.api_path('v3.0/OS-USER/users'), json = { 'user': kwargs })
-    if resp.status_code != 201 or not 'user' in resp.json():
+    if resp.status_code != 201 or 'user' not in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['user']['id']
 
@@ -194,7 +194,7 @@ class Iam:
     :raises RuntimeError: on error
     '''
     resp = self.session.delete(self.api_path(f'v3/users/{usr_id}'))
-    if not resp.status_code in [200, 204]:
+    if resp.status_code not in [200, 204]:
       raise RuntimeError(resp.text if resp.text else resp.reason)
 
   def reset_passwd(self, usr_id:str, password:str,pwd_status:bool = True):
@@ -225,7 +225,7 @@ class Iam:
     '''
     params = dict() if name is None else { 'params': { 'name': name } }
     resp = self.session.get(self.api_path('v3/groups'), **params)
-    if resp.status_code != 200 or not 'groups' in resp.json():
+    if resp.status_code != 200 or 'groups' not in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['groups']
 
@@ -237,7 +237,7 @@ class Iam:
     :raises RuntimeError: on error
     '''
     resp = self.session.get(self.api_path(f'v3/groups/{grpid}/users'))
-    if resp.status_code != 200 or not 'users' in resp.json():
+    if resp.status_code != 200 or 'users' not in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['users']
 
@@ -257,9 +257,9 @@ class Iam:
 
     '''
     payload = { 'name': name }
-    if not description is None: payload['description'] = description
+    if description is not None: payload['description'] = description
     resp = self.session.post(self.api_path('v3/groups'), json=dict(group=payload))
-    if resp.status_code != 201 or not 'group' in resp.json():
+    if resp.status_code != 201 or 'group' not in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['group']['id']
 
@@ -270,7 +270,7 @@ class Iam:
     :raises RuntimeError: on error
     '''
     resp = self.session.delete(self.api_path(f'v3/groups/{grp_id}'))
-    if not resp.status_code in [200, 204]:
+    if resp.status_code not in [200, 204]:
       raise RuntimeError(resp.text if resp.text else resp.reason)
 
   def add_group_user(self, grp_id:str, usr_id:str) -> None:
@@ -322,7 +322,7 @@ class Iam:
     :raises RuntimeError: on error
     '''
     resp = self.session.get(self.api_path('v3/auth/domains'))
-    if resp.status_code != 200 or not 'domains' in resp.json():
+    if resp.status_code != 200 or 'domains' not in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['domains']
 
@@ -336,7 +336,7 @@ class Iam:
     '''
     path = f'v3/domains/{domid}/groups/{grpid}/roles'
     resp = self.session.get(self.api_path(path))
-    if resp.status_code != 200 or not 'roles' in resp.json():
+    if resp.status_code != 200 or 'roles' not in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['roles']
 
@@ -350,7 +350,7 @@ class Iam:
     '''
     path = f'v3/projects/{prjid}/groups/{grpid}/roles'
     resp = self.session.get(self.api_path(path))
-    if resp.status_code != 200 or not 'roles' in resp.json():
+    if resp.status_code != 200 or 'roles' not in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['roles']
 
@@ -386,7 +386,7 @@ class Iam:
     '''
     params = dict() if name is None else { 'params': { 'name': name } }
     resp = self.session.get(self.api_path('v3/projects'), **params)
-    if resp.status_code != 200 or not 'projects' in resp.json():
+    if resp.status_code != 200 or 'projects' not in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['projects']
 
@@ -402,7 +402,7 @@ class Iam:
     accurately.  For that you need to use this REST API call.
     '''
     resp = self.session.get(self.api_path(f'v3-ext/projects/{prj_id}'))
-    if resp.status_code != 200 or not 'project' in resp.json():
+    if resp.status_code != 200 or 'project' not in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['project']
 
@@ -426,9 +426,9 @@ class Iam:
       'name': name,
       'parent_id': parent_id,
     }
-    if not description is None: payload['description'] = description
+    if description is not None: payload['description'] = description
     resp = self.session.post(self.api_path('v3/projects'), json = dict(project = payload))
-    if resp.status_code != 201 or not 'project' in resp.json():
+    if resp.status_code != 201 or 'project' not in resp.json():
       raise RuntimeError(resp.text)
     return resp.json()['project']['id']
 
@@ -441,7 +441,7 @@ class Iam:
     *NOTE* deleting a project takes over 30 minutes to complete.
     '''
     resp = self.session.delete(self.api_path(f'v3/projects/{prj_id}'))
-    if not resp.status_code in [200, 204]:
+    if resp.status_code not in [200, 204]:
       raise RuntimeError(resp.text if resp.text else resp.reason)
 
   def gen_user_name(self, length = 8) -> str:
@@ -489,7 +489,6 @@ class Iam:
 if __name__ == '__main__':
   import api
   import creds
-  import yaml
 
   api.http_logging()
   cfg = creds.creds(cloud_name = 'otc-eu-de')

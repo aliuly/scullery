@@ -32,7 +32,6 @@ See {py:obj}`scullery.iam.Iam.new_role` for more details.
 
 import argparse
 import json
-import os
 import sys
 import yaml
 
@@ -121,7 +120,7 @@ def del_role(args: argparse.Namespace) -> None:
       sys.stderr.write(f'{role}\n')
       cc.iam.del_role(role['id'])
     except KeyError:
-      sys.stderr.write(f'{g}: Role not found\n')
+      sys.stderr.write(f'{r}: Role not found\n')
 
 def add_role(args: argparse.Namespace) -> None:
   '''Create a new custom role from a policy file'''

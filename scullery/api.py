@@ -3,15 +3,7 @@
 # API sessions
 #
 '''REST API session implementation'''
-import datetime
-import hashlib
-import hmac
-import json
-import os
 import requests
-from requests.auth import AuthBase
-from urllib.parse import urlparse, quote, urlencode, parse_qsl
-import shlex
 import subprocess
 import sys
 
@@ -19,6 +11,8 @@ try:
   from icecream import ic
 except ImportError:  # Graceful fallback if IceCream isn't installed.
   ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
+
+import tcurl
 
 from . import iam
 from . import deh
@@ -270,7 +264,7 @@ class ObsSession:
     fn = getattr(requests, method.lower())
     xhdrs = dict(**self.xhdrs)
     if 'headers' in kwargs:
-      add_headers(xhdrs, kwargs['headers'])
+      tcurl.add_headers(xhdrs, kwargs['headers'])
       del kwargs['headers']
 
     resp = fn(url, **xhdrs, **kwargs)

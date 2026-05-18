@@ -14,7 +14,7 @@ from . import __meta__
 
 PARSER_FACTORY = {}
 
-def register_parser(mid:str, parser_cb:Callable[None,[argparser.Namespace]]) -> None:
+def register_parser(mid:str, parser_cb:Callable[None,[argparse.Namespace]]) -> None:
   '''Register a sub-parser
 
   :param mid: id for this sub-parser... Mainly used for sorting

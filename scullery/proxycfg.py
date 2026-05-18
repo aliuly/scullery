@@ -68,7 +68,7 @@ def show_autocfg(opts = None):
 
   if url: print('// AutoConfigURL: {url}'.format(url=url))
   if proxy: print('// Recognized proxy: {proxy}'.format(proxy=proxy))
-  if jstext and not opts is None and opts.debug:
+  if jstext and opts is not None and opts.debug:
     print('// Contents:')
     print(jstext)
 

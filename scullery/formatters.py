@@ -261,7 +261,7 @@ def _fmt_simple(rows: list[dict], columns: Columns) -> str:
   keys = [k for k, _ in columns]
   labels = [label for _k, label in columns]
   # Calculate column widths from data + header
-  widths = [len(str(l)) for l in labels]
+  widths = [len(str(lb)) for lb in labels]
   for r in rows:
     for i, k in enumerate(keys):
       widths[i] = max(widths[i], len(str(r.get(k, ''))))

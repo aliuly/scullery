@@ -17,6 +17,7 @@ import pathlib
 import requests
 import sys
 import yaml
+from typing import Any
 
 from mypielib.get_nested import get_nested_value
 import tcurl
@@ -215,7 +216,7 @@ def resolve_creds(
       creds['user_domain_name'] = domain[0]
       return creds
     else:
-      sys.stderr.write(f'Missing OS_USER_DOMAIN_NAME, ignoring OS_USERNAME+OS_PASSWORD\n')
+      sys.stderr.write('Missing OS_USER_DOMAIN_NAME, ignoring OS_USERNAME+OS_PASSWORD\n')
 
   # First check if we have valid cached credentials
   token, tk_file = resolve_from_yaml(f'clouds.{myname}.cached.token')

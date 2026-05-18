@@ -12,7 +12,6 @@ This recipe is used to list images
 
 import argparse
 import sys
-import yaml
 
 try:
   from icecream import ic

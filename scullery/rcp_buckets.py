@@ -40,6 +40,7 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 
 from . import clouds
 from . import formatters
+from . import obs
 from . import parsers
 
 
@@ -213,6 +214,33 @@ def delete_tags(args: argparse.Namespace) -> None:
 
 # ── Access commands ────────────────────────────────────────────────
 
+def _resolve_principal(args: argparse.Namespace, who: str) -> tuple[str, str]:
+    '''Resolve an IAM user name to a principal type and S3-compatible URN.
+
+    Looks up the IAM user by name, retrieves the domain (account) ID,
+    and builds a principal ARN suitable for use in a bucket policy.
+
+    :param args: Parsed command-line arguments (used to create an IAM session).
+    :param who:  IAM user name to resolve.
+    :returns:    Tuple of ``(principal_type, principal_urn)``.
+    :raises SystemExit: If the user cannot be found or the domain is unclear.
+    '''
+    api = clouds.session(args)
+    users = api.iam.users(who)
+    if len(users) != 1:
+        sys.stderr.write(f'[error] IAM user "{who}" not found.\n')
+        sys.exit(1)
+
+    domain_id = users[0].get('domain_id')
+    if not domain_id:
+        sys.stderr.write(f'[error] Cannot determine domain ID for user "{who}".\n')
+        sys.exit(1)
+
+    principal_type = 'user'
+    principal_urn = obs.Buckets._principal_urn(domain_id, principal_type, who)
+    return principal_type, principal_urn
+
+
 def show_access(args: argparse.Namespace) -> None:
     '''Display the bucket access policy, or dispatch grant/revoke.'''
     if args.op == 'grant':
@@ -253,7 +281,7 @@ def grant_access(args: argparse.Namespace) -> None:
         sys.stderr.write('[error] Usage: access <name> grant <who> <perm>\n')
         sys.exit(1)
     cc = clouds.s3session(args)
-    ptype, principal_urn = _resolve_principal(cc, args.who)
+    ptype, principal_urn = _resolve_principal(args, args.who)
     cc.bucket.grant_policy(args.name, principal_urn, args.permission.upper())
     print(f'Granted "{args.permission.upper()}" on "{args.name}" to {ptype} "{args.who}".')
 
@@ -264,7 +292,7 @@ def revoke_access(args: argparse.Namespace) -> None:
         sys.stderr.write('[error] Usage: access <name> revoke <who> <perm>\n')
         sys.exit(1)
     cc = clouds.s3session(args)
-    ptype, principal_urn = _resolve_principal(cc, args.who)
+    ptype, principal_urn = _resolve_principal(args, args.who)
     cc.bucket.revoke_policy(args.name, principal_urn, args.permission.upper())
     print(f'Revoked "{args.permission.upper()}" on "{args.name}" from {ptype} "{args.who}".')
 
@@ -350,14 +378,14 @@ def parser(subp: argparse.ArgumentParser) -> None:
 
     # -- access ----------------------------------------------------------
     pp = sp.add_parser("access",
-                       help="Manage bucket access policy (IAM users/groups)",
+                       help="Manage bucket access policy (IAM users",
                        aliases=["policy",'pol'])
     pp.add_argument("name", help="Bucket name")
     pp.add_argument("op", nargs="?",
                     choices=["grant", "revoke"],
                     help="Operation (grant or revoke)")
     pp.add_argument("who", nargs="?",
-                    help="IAM user or group name")
+                    help="IAM user name")
     pp.add_argument("permission", nargs="?",
                     choices=["READ", "WRITE", "FULL_CONTROL"],
                     help="Permission to grant/revoke")

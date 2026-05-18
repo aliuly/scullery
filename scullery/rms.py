@@ -35,10 +35,10 @@ class Rms:
     params = {
       'limit': 199
     }
-    if not typestr is None: params['type'] = typestr
+    if typestr is not None: params['type'] = typestr
 
     domain_id = self.session.iam.domain(match)
-    if not match is None:
+    if match is not None:
       if '_' in match:
         params['region_id'], _ = match.split('_',1)
       else:
@@ -47,9 +47,9 @@ class Rms:
 
     resources = []
 
-    while not 'marker' in params or not params['marker'] is None:
+    while 'marker' not in params or params['marker'] is not None:
       resp = self.session.get(self.api_path(f'v1/resource-manager/domains/{domain_id}/all-resources'), params = params)
-      if resp.status_code != 200 or not 'resources' in resp.json():
+      if resp.status_code != 200 or 'resources' not in resp.json():
         raise RuntimeError(resp.text)
       q = resp.json()
       params['marker'] = q['page_info']['next_marker']
