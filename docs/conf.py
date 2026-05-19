@@ -13,6 +13,7 @@ import datetime
 import os
 import sys
 from inspect import getsourcefile
+import subprocess
 
 DOCS_DIR = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
 REPO_DIR = os.path.dirname(DOCS_DIR)
@@ -27,10 +28,22 @@ from scullery import __meta__ as meta  # noqa: E402 isort:skip
 project = meta.name
 author = meta.author
 copyright = "{}, {}".format(datetime.datetime.now().year, author)
-# The full version, including alpha/beta/rc tags
-release = meta.version
-# The short X.Y version
-version = ".".join(release.split(".")[0:2])
+
+rc = subprocess.run(
+    [ 'git', 'describe', '--always' ],
+    text = True,
+    capture_output = True,
+)
+if rc.returncode == 0:
+  release = rc.stdout
+  version = rc.stdout.split('-')[0]
+else:
+  # The full version, including alpha/beta/rc tags
+  release = meta.version
+  # The short X.Y version
+  version = ".".join(release.split(".")[0:2])
+
+
 
 # -- General configuration ---------------------------------------------------
 

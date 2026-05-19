@@ -49,8 +49,13 @@ COLUMNS: formatters.Columns = [
 
 def run(args: argparse.Namespace) -> None:
   '''Resource management (specify a project to limit list)'''
+  if args.project is not None:
+    args.region = args.project.split('_')[0]
+    if args.prjmatch is None: args.prjmatch = args.project
+    args.project = None
+
   cc = clouds.session(args)
-  resources = cc.rms.resources(args.project, args.type)
+  resources = cc.rms.resources(args.prjmatch, args.type)
   rows = formatters.extract_rows(resources, COLUMNS)
   formatters.write_output(rows, COLUMNS, args.format)
 
@@ -67,10 +72,16 @@ def parser(subp: argparse.ArgumentParser) -> None:
                        help='Resource management',
                      )
   pr.add_argument('-m', '--project',
-                  help='Match project',
+                  dest = 'prjmatch',
+                  help='Match project (or region)',
                   default=None)
+  pr.add_argument('-T','--tags',
+                help='Spcifies tags, format is *key* or *key=value*',
+                action = 'append',
+                default = [],
+  )
   pr.add_argument('-t', '--type',
-                  help='Resource type',
+                  help='Resource type in the format *provider.type*',
                   default=None)
   formatters.add_format_arg(pr)
   pr.set_defaults(recipe_cb=run)

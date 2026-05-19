@@ -24,7 +24,11 @@ class Rms:
     '''Constructor'''
     self.session = session
 
-  def resources(self, match:str|None = None, typestr:str|None = None) -> list:
+  def resources(self,
+        match:str|None = None,
+        typestr:str|None = None,
+        tags:list[str]|None = None,
+  ) -> list:
     '''List resources
 
     :param match: If specified, it will only return projects/region matching
@@ -44,6 +48,9 @@ class Rms:
       else:
         params['region_id'] = match
         match = None
+    if tags is not None and tags:
+      # Include tags...
+      params['tags'] = tags
 
     resources = []
 
