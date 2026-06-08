@@ -29,16 +29,18 @@ from . import rcp_users     # noqa: F401
 
 if sys.platform == "win32":
   from . import rcp_showcfg # noqa: F401
-  
 
-def main(argv:list[str]) -> None:
+
+def main(argv:list[str]|None = None) -> None:
   '''Main script entry point
 
   :param argv: Command line arguments
   '''
+  if argv is None: argv = sys.argv[1:]
+
   cli = parsers.parser_factory(color = True)
   args = cli.parse_args(argv)
-  
+
   if sys.platform == "win32" and hasattr(args,'autocfg') and getattr(args,'autocfg'):
     proxycfg.proxy_cfg(True)
 
