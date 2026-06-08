@@ -28,6 +28,7 @@ Usage::
 
 import json
 import xml.etree.ElementTree as ET
+import re
 import sys
 
 try:
@@ -131,12 +132,15 @@ class Buckets:
         })
     return buckets
 
-  def create(self, name: str, location: str | None = None) -> None:
+  def create(self, name: str, location: str | None = None,
+             kms_key_id: str | None = None) -> None:
     '''Create a new OBS bucket.
 
     :param name:     Bucket name (must be globally unique).
     :param location: Optional bucket location (region).  If omitted the
                      default region for the session is used.
+    :param kms_key_id: Optional KMS key ID to enable SSE-KMS default
+                       encryption on the bucket.
     :raises RuntimeError: On API errors.
 
     When *location* differs from the endpoint region (or when the
@@ -154,7 +158,10 @@ class Buckets:
     headers['Content-Type'] = 'application/xml'
 
     self.session.request('put', f'/{name}', headers=headers, data=body)
-
+    if kms_key_id:
+      # Enable encryption
+      self.set_encryption(name, 'aws:kms', kms_key_id)
+        
   def delete(self, name: str) -> None:
     '''Delete an OBS bucket.
 
@@ -164,6 +171,97 @@ class Buckets:
     :raises RuntimeError: On API errors.
     '''
     self.session.request('delete', f'/{name}')
+
+  # ------------------------------------------------------------------
+  # Default encryption
+  # ------------------------------------------------------------------
+
+  def _parse_encryption(self, root: ET.Element) -> dict | None:
+    '''Parse a ``ServerSideEncryptionConfiguration`` XML element.
+
+    :param root: The root ``<ServerSideEncryptionConfiguration>`` element.
+    :returns: A dict with keys ``algorithm`` and optionally ``kms_key_id``,
+              or ``None`` if no rule is configured.
+    '''
+    ns = _ns(root) or Buckets.OBS_XML_NS
+    rule = root.find(f'{{{ns}}}Rule' if ns else 'Rule')
+    if rule is None:
+      return None
+    default = rule.find(
+        f'{{{ns}}}ApplyServerSideEncryptionByDefault' if ns
+        else 'ApplyServerSideEncryptionByDefault'
+    )
+    if default is None:
+      return None
+    result: dict = {
+        'algorithm': _text(default, 'SSEAlgorithm', ns),
+    }
+    kid = _text(default, 'KMSMasterKeyID', ns)
+    if kid:
+      result['kms_key_id'] = kid
+    return result
+
+  def _build_encryption_xml(self,
+                             algorithm: str,
+                             kms_key_id: str | None = None) -> bytes:
+    '''Build a ``ServerSideEncryptionConfiguration`` XML body.
+
+    :param algorithm:  ``'AES256'`` or ``'aws:kms'``.
+    :param kms_key_id: KMS key ID (required when *algorithm* is ``'aws:kms'``).
+    :returns: XML bytes suitable for ``PUT /{bucket}?encryption``.
+    '''
+    ns = Buckets.OBS_XML_NS
+    ET.register_namespace('', ns)
+
+    root = ET.Element(f'{{{ns}}}ServerSideEncryptionConfiguration')
+    rule = ET.SubElement(root, f'{{{ns}}}Rule')
+    default = ET.SubElement(rule,
+        f'{{{ns}}}ApplyServerSideEncryptionByDefault')
+    alg = ET.SubElement(default, f'{{{ns}}}SSEAlgorithm')
+    alg.text = algorithm
+    if kms_key_id:
+      kid = ET.SubElement(default, f'{{{ns}}}KMSMasterKeyID')
+      kid.text = kms_key_id
+    return ET.tostring(root, encoding='utf-8')
+
+  def get_encryption(self, bucket: str) -> dict | None:
+    '''Get the default encryption configuration for a bucket.
+
+    :param bucket: Bucket name.
+    :returns: A dict with ``algorithm`` and optionally ``kms_key_id``,
+              or ``None`` if no default encryption is configured.
+    :raises RuntimeError: On API errors other than 404.
+    '''
+    try:
+      resp = self.session.request('get', f'/{bucket}?encryption')
+    except RuntimeError as exc:
+      if '404' in str(exc):
+        return None
+      raise
+    root = ET.fromstring(resp.content)
+    return self._parse_encryption(root)
+
+  def set_encryption(self, bucket: str, algorithm: str,
+                     kms_key_id: str | None = None) -> None:
+    '''Set the default encryption configuration for a bucket.
+
+    :param bucket:     Bucket name.
+    :param algorithm:  ``'AES256'`` (SSE-S3) or ``'aws:kms'`` (SSE-KMS).
+    :param kms_key_id: KMS key ID (required when *algorithm* is ``'aws:kms'``).
+    :raises RuntimeError: On API errors.
+    '''
+    xml_body = self._build_encryption_xml(algorithm, kms_key_id=kms_key_id)
+    headers = {'Content-Type': 'application/xml'}
+    self.session.request('put', f'/{bucket}?encryption',
+                         headers=headers, data=xml_body)
+
+  def delete_encryption(self, bucket: str) -> None:
+    '''Remove the default encryption configuration from a bucket.
+
+    :param bucket: Bucket name.
+    :raises RuntimeError: On API errors.
+    '''
+    self.session.request('delete', f'/{bucket}?encryption')
 
   # ------------------------------------------------------------------
   # ACL helpers
@@ -461,6 +559,7 @@ class Buckets:
       if '404' in str(exc):
           return []
       raise
+
     root = ET.fromstring(resp.content)
     return self._parse_tagging(root)
 

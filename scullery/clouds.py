@@ -267,7 +267,7 @@ def resolve_creds(
     files[f] = f
     creds[i] = k
   if count == 3:
-    sys.stderr.write(f'Using user+name+password from {", ".join(files.keys())}\n')
+    sys.stderr.write(f'Using username+password from {", ".join(files.keys())}\n')
     return creds
 
   # OK no good credentials found

@@ -19,6 +19,7 @@ from . import rcp_deh       # noqa: F401
 from . import rcp_ecs       # noqa: F401
 from . import rcp_groups    # noqa: F401
 from . import rcp_ims       # noqa: F401
+from . import rcp_kms       # noqa: F401
 from . import rcp_login     # noqa: F401
 from . import rcp_projects  # noqa: F401
 from . import rcp_rms       # noqa: F401

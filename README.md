@@ -77,6 +77,7 @@ appropriate.
 | `scullery project` | `rcp_projects.py` | **Project** – list, get details, create, delete, grant/revoke role assignments |
 | `scullery resource` | `rcp_rms.py` | **RMS** – list cloud resources, optionally filtered by project |
 | `scullery role` | `rcp_roles.py` | **IAM Roles** – list custom/system roles, get details, create, delete |
+| `scullery kms` | `rcp_kms.py` | **KMS** – list, create, delete, enable/disable, rotate Customer Master Keys; direct and envelope encryption |
 | `scullery tag` | `rcp_tms.py` | **TMS** – list, create, delete pre-defined tags |
 | `scullery user` | `rcp_users.py` | **IAM Users** – list, get, create, delete; manage group membership and passwords |
 

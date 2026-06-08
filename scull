@@ -2,7 +2,7 @@
 #
 # Run python using venv
 #
-mydir=$(dirname "$0")
+mydir=$(dirname $(readlink -f "$0"))
 export PYTHONPATH="$mydir:$PYTHONPATH"
 exec "$mydir/pys" -m scullery "$@"
 

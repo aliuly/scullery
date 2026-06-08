@@ -3,6 +3,7 @@
 # API sessions
 #
 '''REST API session implementation'''
+import re
 import requests
 import subprocess
 import sys
@@ -18,6 +19,7 @@ from . import iam
 from . import deh
 from . import ecs
 from . import ims
+from . import kms
 from . import tms
 from . import rms
 
@@ -103,6 +105,7 @@ class ApiSession:
     self.ecs = ecs.Ecs(self)
     self.iam = iam.Iam(self)
     self.ims = ims.Ims(self)
+    self.kms = kms.Kms(self)
     self.tms = tms.Tms(self)
     self.rms = rms.Rms(self)
 
@@ -227,10 +230,13 @@ class ObsSession:
           path_style = True,
         )
 
-  def api_path(self, path: str = '') -> str:
+  def api_path(self, path: str = '', endpoint: str|None = None) -> str:
     '''Build the full OBS API URL for *path*.'''
-    host = ObsSession.API_HOST.format(region=self.region)
-    return f'https://{host}{path}'
+    if endpoint is None:
+      host = ObsSession.API_HOST.format(region=self.region)
+      return f'https://{host}{path}'
+    else:
+      return f'https://{endpoint}{path}'
   # ------------------------------------------------------------------
   # Cleanup
   # ------------------------------------------------------------------
@@ -251,7 +257,7 @@ class ObsSession:
   # HTTP helpers
   # ------------------------------------------------------------------
 
-  def request(self, method: str, path: str, **kwargs):
+  def request(self, method: str, path: str, endpoint:str|None = None, **kwargs):
     '''Make an OBS API request and return the response.
 
     :param method: HTTP method (``'get'``, ``'put'``, ``'delete'``, …)
@@ -260,14 +266,29 @@ class ObsSession:
     :returns:      ``requests.Response``
     :raises requests.HTTPError: On non-2xx status
     '''
-    url = self.api_path(path)
+    url = self.api_path(path, endpoint)
     fn = getattr(requests, method.lower())
     xhdrs = dict(**self.xhdrs)
     if 'headers' in kwargs:
-      tcurl.add_headers(xhdrs, kwargs['headers'])
+      if isinstance(kwargs['headers'], dict):
+        if 'headers' in xhdrs:
+          xhdrs['headers'].update(kwargs['headers'])
+        else:
+          xhdrs['headers'] = kwargs['headers']
+      elif isinstance(kwargs['headers'], list):
+        tcurl.add_headers(xhdrs, kwargs['headers'])
+      else:
+        raise TypeError(f'Expected dict or list, got {type(kwarrgs["headers"]).__name__}')
       del kwargs['headers']
 
     resp = fn(url, **xhdrs, **kwargs)
+    if ('?' in path) and (resp.status_code == 301): # This used to work automatically before...       
+      # Naive parsing...
+      if mv := re.search(r'<Endpoint>(.*)</Endpoint>',str(resp.content)):
+        url = self.api_path('?'+path.split('?',1)[1], mv.group(1))
+        # ic(mv.group(1), url)
+        resp = fn(url, **xhdrs, **kwargs)
+        # ic(resp.status_code, resp.content, resp.headers)
     if not resp.ok:
       raise RuntimeError(
           f'OBS API error {resp.status_code}: {resp.text[:2000]}'

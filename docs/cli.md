@@ -43,6 +43,13 @@
    :func: sphinxarg
 ```
 
+## KMS
+
+```{argparse}
+   :module: scullery.rcp_kms
+   :func: sphinxarg
+```
+
 ## Login
 
 ```{argparse}

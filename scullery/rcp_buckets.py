@@ -133,8 +133,15 @@ def list_buckets_filtered(args: argparse.Namespace) -> None:
 def create_bucket(args: argparse.Namespace) -> None:
     '''Create an OBS bucket'''
     cc = clouds.s3session(args)
-    cc.bucket.create(args.name, location=args.location)
-    print(f'Bucket "{args.name}" created.')
+    kms_key_id = None
+    if args.kms_key:
+        kms_key_id = _resolve_kms_key(args, args.kms_key)
+    cc.bucket.create(args.name, location=args.location,
+                     kms_key_id=kms_key_id)
+    msg = f'Bucket "{args.name}" created.'
+    if kms_key_id:
+        msg += f' (SSE-KMS key: {kms_key_id})'
+    print(msg)
 
 
 def delete_bucket(args: argparse.Namespace) -> None:
@@ -142,6 +149,35 @@ def delete_bucket(args: argparse.Namespace) -> None:
     cc = clouds.s3session(args)
     cc.bucket.delete(args.name)
     print(f'Bucket "{args.name}" deleted.')
+
+
+# ── KMS key resolution ────────────────────────────────────────────────
+
+def _resolve_kms_key(args: argparse.Namespace, name_or_id: str) -> str:
+    '''Resolve a KMS key alias or key ID to a canonical key ID.
+
+    Fast path: if *name_or_id* looks like a UUID (contains ``-``
+    and ≥ 32 chars), return it as-is without any API call.
+
+    Slow path: create a scoped API session and resolve via the KMS
+    ``resolve_key`` method (which does alias→ID lookup).
+
+    :param args:        Parsed command-line arguments.
+    :param name_or_id:  KMS key alias or key ID.
+    :returns:           Canonical key ID (UUID string).
+    :raises SystemExit: If the key cannot be resolved.
+    '''
+    # Fast path: input already looks like a UUID.
+    if '-' in name_or_id and len(name_or_id) >= 32:
+        return name_or_id
+
+    # Slow path: resolve alias via KMS API.
+    cc = clouds.session(args, scoped=True)
+    try:
+        return cc.kms.resolve_key(name_or_id)
+    except KeyError as e:
+        sys.stderr.write(f'[error] {e}\n')
+        sys.exit(1)
 
 
 # ── Tag helpers ─────────────────────────────────────────────────────
@@ -170,8 +206,11 @@ def show_tags(args: argparse.Namespace) -> None:
 
     # If key=value pairs given, switch to set mode.
     if args.tag:
-        tags = [_parse_kvp(kvp) for kvp in args.tag]
-        tag_dicts = [{'key': k, 'value': v} for k, v in tags]
+        tags = {}
+        for d in cc.bucket.get_tagging(args.name):
+          tags[d['key']] = d['value']
+        tags.update([_parse_kvp(kvp) for kvp in args.tag])
+        tag_dicts = [{'key': k, 'value': v} for k, v in tags.items()]
         cc.bucket.set_tagging(args.name, tag_dicts)
         print(f'Tags set on bucket "{args.name}".')
         return
@@ -200,12 +239,21 @@ def delete_tags(args: argparse.Namespace) -> None:
 
     # Read current tags, remove matching keys, write back.
     current = cc.bucket.get_tagging(args.name)
+    if len(current) == 0:
+      print('Nothing to do')
+      return
     keys_to_remove = set(args.key)
     remaining = [t for t in current if t['key'] not in keys_to_remove]
 
     if len(remaining) == len(current):
         print(f'None of the specified keys found on bucket "{args.name}".')
         return
+    elif len(remaining) == 0:
+        cc.bucket.delete_tagging(args.name)
+        print(f'All tags removed from bucket "{args.name}".')
+        return
+      
+    ic(remaining)
 
     cc.bucket.set_tagging(args.name, remaining)
     removed = len(current) - len(remaining)
@@ -297,6 +345,30 @@ def revoke_access(args: argparse.Namespace) -> None:
     print(f'Revoked "{args.permission.upper()}" on "{args.name}" from {ptype} "{args.who}".')
 
 
+# ── Encryption commands ──────────────────────────────────────────────
+
+def handle_encryption(args: argparse.Namespace) -> None:
+    '''Manage default encryption on a bucket (SSE-KMS or SSE-S3).'''
+    cc = clouds.s3session(args)
+
+    if args.off:
+        cc.bucket.delete_encryption(args.name)
+        print(f'Default encryption removed from bucket "{args.name}".')
+    elif args.kms_key:
+        key_id = _resolve_kms_key(args, args.kms_key)
+        cc.bucket.set_encryption(args.name, 'aws:kms', kms_key_id=key_id)
+        print(f'SSE-KMS enabled on bucket "{args.name}" (key: {key_id}).')
+    elif args.sse_s3:
+        cc.bucket.set_encryption(args.name, 'AES256')
+        print(f'SSE-S3 (AES256) enabled on bucket "{args.name}".')
+    else:
+        cfg = cc.bucket.get_encryption(args.name)
+        if cfg is None:
+            print(f'No default encryption configured on bucket "{args.name}".')
+        else:
+            formatters.write_single_output(cfg, args.format)
+
+
 # ── Parser ─────────────────────────────────────────────────────────
 
 def sphinxarg() -> argparse.ArgumentParser:
@@ -325,6 +397,9 @@ def parser(subp: argparse.ArgumentParser) -> None:
     pp.add_argument('name', help='Bucket name (globally unique)')
     pp.add_argument('--location', '-l', default=None,
                     help='Bucket location (region). Defaults to session region.')
+    pp.add_argument('--kms-key', '-k',
+                    dest='kms_key', default=None,
+                    help='KMS key alias or ID (UUID) for SSE-KMS default encryption')
     pp.set_defaults(recipe_cb=create_bucket)
 
     # -- delete ----------------------------------------------------------
@@ -390,6 +465,24 @@ def parser(subp: argparse.ArgumentParser) -> None:
                     choices=["READ", "WRITE", "FULL_CONTROL"],
                     help="Permission to grant/revoke")
     pp.set_defaults(recipe_cb=show_access)
+    formatters.add_single_format_arg(pp)
+
+    # -- encryption -------------------------------------------------------
+    pp = sp.add_parser('encryption',
+                       help='Manage bucket default encryption (SSE-KMS / SSE-S3)',
+                       aliases=['enc', 'sse'])
+    pp.add_argument('name', help='Bucket name')
+    xgrp = pp.add_mutually_exclusive_group()
+    xgrp.add_argument('--kms-key', '-k',
+                      dest='kms_key', default=None,
+                      help='Enable SSE-KMS with this key alias or ID (UUID)')
+    xgrp.add_argument('--sse-s3', '-s',
+                      dest='sse_s3', action='store_true', default=False,
+                      help='Enable SSE-S3 (AES256)')
+    xgrp.add_argument('--off', '-o',
+                      dest='off', action='store_true', default=False,
+                      help='Disable default encryption')
+    pp.set_defaults(recipe_cb=handle_encryption)
     formatters.add_single_format_arg(pp)
 
 
