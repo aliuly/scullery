@@ -205,7 +205,7 @@ class Iam:
     :params pwd_status: If True the passwords needs to be reset on first login.  Defaults to True.
     :raises RuntimeError: on error
     '''
-    ic(pwd_status)
+    # ~ ic(pwd_status)
     resp = self.session.patch(self.api_path(f'v3/users/{usr_id}'),
                                   json = {
                                     'user': {

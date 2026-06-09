@@ -102,7 +102,7 @@ if __name__ == '__main__':
     # ~ print('{name} {id} ram:{ram} vcpu:{vcpus}'.format(**flavor))
   for vm in ecs.servers(detail = True):
     print('{name} {id} {status}'.format(**vm))
-    ic(vm)
+    # ~ ic(vm)
 
 
   del(api)

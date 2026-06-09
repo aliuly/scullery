@@ -90,14 +90,14 @@ class Objects:
     '''
     self.buckets = buckets
     h = buckets.meta(bucket)
-    ic(h)
+    # ~ ic(h)
     self.endpoint = h['endpoint']
     self.region = h['x-amz-bucket-region']
     self.default_storage_class = h['x-default-storage-class']
     self.obs_version = h['x-obs-version']
     # ~ ic(h)
     self.sse = buckets.get_encryption(bucket)
-    ic(self.sse)
+    # ~ ic(self.sse)
 
   def put(self,
           key:str,
@@ -152,7 +152,7 @@ class Objects:
               headers = headers,
             )
     resp.raise_for_status()
-    ic(resp, resp.headers)
+    # ~ ic(resp, resp.headers)
     return resp.content
 
   def meta(self,
@@ -170,7 +170,7 @@ class Objects:
               headers = headers,
             )
     resp.raise_for_status()
-    ic(resp, resp.headers)
+    # ~ ic(resp, resp.headers)
     return resp.headers
 
   def delete(self,
@@ -188,8 +188,7 @@ class Objects:
               headers = headers,
             )
     resp.raise_for_status()
-    ic(resp, resp.headers)
-
+    # ~ ic(resp, resp.headers)
 
   def objects(self,
               prefix:str|None = None,
@@ -209,7 +208,7 @@ class Objects:
         'delimiter': delimiter,
         # ~ 'max-keys': 5,
     }
-    ic(self.endpoint)
+    # ~ ic(self.endpoint)
     if prefix is not None: params['prefix'] = prefix
     if fetch_owner is not None: params['fetch-owner'] = 'true' if fetch_owner else 'false'
 
@@ -950,7 +949,7 @@ class Buckets:
     :returns: dictionary with bucket metadata
     '''
     resp = self.session.request('head', f'/{bucket}')
-    ic(resp,resp.headers)
+    # ~ ic(resp,resp.headers)
     region = resp.headers['x-amz-bucket-region']
     if resp.status_code == 301:
       # OK, call the actual location

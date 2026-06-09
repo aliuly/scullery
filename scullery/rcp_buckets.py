@@ -252,8 +252,7 @@ def delete_tags(args: argparse.Namespace) -> None:
         print(f'All tags removed from bucket "{args.name}".')
         return
 
-    ic(remaining)
-
+    # ~ ic(remaining)
     cc.bucket.set_tagging(args.name, remaining)
     removed = len(current) - len(remaining)
     print(f'Removed {removed} tag(s) from bucket "{args.name}".')
