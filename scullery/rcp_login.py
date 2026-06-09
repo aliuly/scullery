@@ -130,7 +130,7 @@ def login(args: argparse.Namespace) -> None:
   if args.aksk:
     # Issue temp AK/SK
     aksk = tcurl.temp_aksk(region = args.region, token = token, max_secs = args.ttl)
-    ic(aksk)
+    # ~ ic(aksk)
     code['clouds'][__meta__.name]['cached'] = {
         'ak': aksk['access'],
         'sk': aksk['secret'],

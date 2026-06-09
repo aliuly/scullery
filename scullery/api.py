@@ -25,13 +25,6 @@ from . import rms
 
 from . import obs
 
-try:
-  import minis3
-  HAS_MINIS3 = True
-except ImportError:
-  HAS_MINIS3 = False
-
-
 # ====================================================================
 # Helpers
 # ====================================================================
@@ -197,9 +190,7 @@ class ObsSession:
   Created by :func:`~scullery.clouds.s3session` when temporary or permanent
   AK/SK credentials are available.
 
-  Provides the :attr:`bucket` endpoint for managing buckets and an
-  :attr:`s3` endpoint (:class:`minis3.Connection`) for object-level
-  operations when S3 credentials were provided.
+  Provides the :attr:`bucket` endpoint for managing buckets.
   '''
   API_HOST = 'obs.{region}.otc.t-systems.com'
   '''OBS API endpoint template.'''
@@ -223,12 +214,6 @@ class ObsSession:
     self.clean_up = clean_up
 
     self.bucket = obs.Buckets(self)
-    if HAS_MINIS3 and s3creds:
-      self.s3 = minis3.Connection(**s3creds,
-          endpoint = self.api_path(),
-          tls = True,
-          path_style = True,
-        )
 
   def api_path(self, path: str = '', endpoint: str|None = None) -> str:
     '''Build the full OBS API URL for *path*.'''
@@ -282,7 +267,7 @@ class ObsSession:
       del kwargs['headers']
 
     resp = fn(url, **xhdrs, **kwargs)
-    if ('?' in path) and (resp.status_code == 301): # This used to work automatically before...       
+    if ('?' in path) and (resp.status_code == 301): # This used to work automatically before...
       # Naive parsing...
       if mv := re.search(r'<Endpoint>(.*)</Endpoint>',str(resp.content)):
         url = self.api_path('?'+path.split('?',1)[1], mv.group(1))

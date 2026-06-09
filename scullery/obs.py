@@ -26,7 +26,10 @@ Usage::
     cc.bucket.delete('my-old-bucket')
 '''
 
+import base64
+import hashlib
 import json
+import magic
 import xml.etree.ElementTree as ET
 import re
 import sys
@@ -73,6 +76,168 @@ def _location_body(region: str) -> bytes:
       b'</CreateBucketConfiguration>'
   )
 
+
+# ---------------------------------------------------------------------------
+# Objects class
+# ---------------------------------------------------------------------------
+class Objects:
+  '''OBS Object management -- objects, upload, download
+  '''
+  def __init__(self, buckets, bucket) -> None:
+    '''Constructor
+
+    :param session: An :class:`~scullery.obs.Buckets` instance.
+    '''
+    self.buckets = buckets
+    h = buckets.meta(bucket)
+    ic(h)
+    self.endpoint = h['endpoint']
+    self.region = h['x-amz-bucket-region']
+    self.default_storage_class = h['x-default-storage-class']
+    self.obs_version = h['x-obs-version']
+    # ~ ic(h)
+    self.sse = buckets.get_encryption(bucket)
+    ic(self.sse)
+
+  def put(self,
+          key:str,
+          content:bytes,
+          headers: dict[str,str]):
+    '''Upload an object
+
+    :param key: object key
+    :param content: contents to upload
+    :param headers: additional headers for the request.
+
+    The following headers are calculated automatically if not
+    provided by the caller:
+
+    * Content-MD5: calculated from the object contents
+    * Content-Type: if omitted, will be guessed using magic bytes
+    * x-obs-server-side-encryption and x-obs-server-side-encryption-key-id :
+      defaults to bucket settings.
+    '''
+    hdr = { k.lower(): v for k,v in headers.items() }
+    if self.sse:
+      if ('x-obs-server-side-encryption' not in hdr) and self.sse['algorithm'] == 'aws.kms':
+        hdr['x-obs-server-side-encryption'] = 'kms'
+      if ('x-obs-server-side-encryption-key-id' not in hdr) and 'kms_key_id' in self.sse:
+        hdr['x-obs-server-side-encryption-key-id'] = self.sse['kms_key_id']
+    if 'content-md5' not in hdr:
+      md5_bytes = hashlib.md5(content).digest()
+      hdr['content-md5'] = base64.b64encode(md5_bytes) #.decode('utf-8')?
+    if 'content-type' not in hdr:
+      hdr['content-type'] = magic.from_buffer(content, mime=True)
+
+    resp = self.buckets.session.request('put', '/'+key,
+              endpoint = self.endpoint,
+              headers = hdr,
+              data = content,
+            )
+    resp.raise_for_status()
+    # ~ ic(resp, resp.headers, resp.content)
+
+  def get(self,
+          key:str,
+          headers: dict[str,str]|None = None) -> bytes:
+    '''Download an object
+
+    :param key: object key
+    :param headers: additional headers for the request.
+
+    '''
+    if headers is None: headers = dict()
+    resp = self.buckets.session.request('get', '/'+key,
+              endpoint = self.endpoint,
+              headers = headers,
+            )
+    resp.raise_for_status()
+    ic(resp, resp.headers)
+    return resp.content
+
+  def meta(self,
+          key:str,
+          headers: dict[str,str]|None = None) -> bytes:
+    '''Get an object's metadata
+
+    :param key: object key
+    :param headers: additional headers for the request.
+
+    '''
+    if headers is None: headers = dict()
+    resp = self.buckets.session.request('head', '/'+key,
+              endpoint = self.endpoint,
+              headers = headers,
+            )
+    resp.raise_for_status()
+    ic(resp, resp.headers)
+    return resp.headers
+
+  def delete(self,
+          key:str,
+          headers: dict[str,str]|None = None) -> bytes:
+    '''Delete an object
+
+    :param key: object key
+    :param headers: additional headers for the request.
+
+    '''
+    if headers is None: headers = dict()
+    resp = self.buckets.session.request('delete', '/'+key,
+              endpoint = self.endpoint,
+              headers = headers,
+            )
+    resp.raise_for_status()
+    ic(resp, resp.headers)
+
+
+  def objects(self,
+              prefix:str|None = None,
+              delimiter:str = '/',
+              fetch_owner:bool|None = None,
+            ) -> list[dict[str,dict]]:
+    '''Return a list of objects in the bucket
+    :param bucket: bucket to query
+    :param prefix: prefix string
+    :param delimiter: defaults to "/"
+    :param fetch_owner:
+    :returns: list of objects
+    :todo: Only supports 1000 key objects!
+    '''
+    params = {
+        'list-type': 2,
+        'delimiter': delimiter,
+        # ~ 'max-keys': 5,
+    }
+    ic(self.endpoint)
+    if prefix is not None: params['prefix'] = prefix
+    if fetch_owner is not None: params['fetch-owner'] = 'true' if fetch_owner else 'false'
+
+    resp = self.buckets.session.request('get','?', endpoint = self.endpoint, params = params)
+    root = ET.fromstring(resp.content)
+    namespace = _ns(root)
+
+    objects: list[dict] = []
+
+    prefix_tx = _text(root,'Prefix', namespace)
+    key_count = _text(root,'KeyCount', namespace)
+    key_count = int(key_count) if key_count.isdigit() else None
+    is_trunc = _text(root,'IsTruncated', namespace) == 'true'
+
+    contents = root.findall(f'{{{namespace}}}Contents' if namespace else 'Contents')
+    for c in contents:
+      size = _text(c,'Size',namespace)
+      size = int(size) if size.isdigit() else None
+      objects.append({
+        'key': _text(c,'Key',namespace),
+        'ETag': _text(c,'ETag',namespace).strip('"'),
+        'size': size,
+        'storage_class': _text(c,'StorageClass',namespace),
+        'last_modified': _text(c,'LastModified',namespace),
+      })
+      owner = _text(c,'Owner',namespace)
+      if owner: objects[-1]['owner'] = owner
+    return objects
 
 # ---------------------------------------------------------------------------
 # Buckets class
@@ -161,7 +326,7 @@ class Buckets:
     if kms_key_id:
       # Enable encryption
       self.set_encryption(name, 'aws:kms', kms_key_id)
-        
+
   def delete(self, name: str) -> None:
     '''Delete an OBS bucket.
 
@@ -776,6 +941,86 @@ class Buckets:
       sys.stderr.write(f'No matching grant found for "{principal_urn}" '
               f'with "{permission}".\n')
 
+  # ------------------------------------------------------------------
+  # Metadata
+  # ------------------------------------------------------------------
+  def meta(self, bucket:str):
+    '''Get bucket meta data
+    :param bucket: bucket name
+    :returns: dictionary with bucket metadata
+    '''
+    resp = self.session.request('head', f'/{bucket}')
+    ic(resp,resp.headers)
+    region = resp.headers['x-amz-bucket-region']
+    if resp.status_code == 301:
+      # OK, call the actual location
+      host = f'{bucket}.{self.session.API_HOST.format(region=region)}'
+      resp = self.session.request('head','/', endpoint = host)
+      headers = {
+        'endpoint': host,
+      }
+    else:
+      headers = {
+        'endpoint': f'{bucket}.{self.session.API_HOST.format(region=region)}'
+      }
+
+    headers.update(resp.headers)
+    return headers
+
+  def objects(self, bucket:str):
+    '''Objects class factory
+    :param bucket: bucket we are working on
+    :returns: Objects instances
+    '''
+    return Objects(self, bucket)
+
+
+    # ~ ,
+              # ~ prefix:str|None = None,
+              # ~ delimiter:str = '/',
+              # ~ fetch_owner:bool|None = None,
+            # ~ ) -> list[dict[str,dict]]:
+    # ~ '''Return a list of objects in the bucket
+    # ~ :param bucket: bucket to query
+    # ~ :param prefix: prefix string
+    # ~ :param delimiter: defaults to "/"
+    # ~ :param fetch_owner:
+    # ~ :returns: list of objects
+    # ~ :todo: Only supports 1000 key objects!
+    # ~ '''
+    # ~ h = self.meta(bucket)
+    # ~ params = {
+        # ~ 'list-type': 2,
+        # ~ 'delimiter': delimiter,
+        # ~ 'max-keys': 5,
+    # ~ }
+    # ~ if prefix is not None: params['prefix'] = prefix
+    # ~ if fetch_owner is not None: params['fetch-owner'] = 'true' if fetch_owner else 'false'
+
+    # ~ resp = self.session.request('get','?', endpoint = h['endpoint'], params = params)
+    # ~ root = ET.fromstring(resp.content)
+    # ~ namespace = _ns(root)
+    # ~ objects: list[dict] = []
+
+    # ~ prefix_tx = _text(root,'Prefix', namespace)
+    # ~ key_count = _text(root,'KeyCount', namespace)
+    # ~ key_count = int(key_count) if key_count.isdigit() else None
+    # ~ is_trunc = _text(root,'IsTruncated', namespace) == 'true'
+
+    # ~ contents = root.findall(f'{{{namespace}}}Contents' if namespace else 'Contents')
+    # ~ for c in contents:
+      # ~ size = _text(c,'Size',namespace)
+      # ~ size = int(size) if size.isdigit() else None
+      # ~ objects.append({
+        # ~ 'key': _text(c,'Key',namespace),
+        # ~ 'ETag': _text(c,'ETag',namespace).strip('"'),
+        # ~ 'size': size,
+        # ~ 'storage_class': _text(c,'StorageClass',namespace),
+        # ~ 'last_modified': _text(c,'LastModified',namespace),
+      # ~ })
+      # ~ owner = _text(c,'Owner',namespace)
+      # ~ if owner: objects[-1]['owner'] = owner
+    # ~ return objects
 
 if __name__ == '__main__':
   # Standalone test — requires a configured clouds.yaml with 'otc' cloud.

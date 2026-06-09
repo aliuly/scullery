@@ -149,7 +149,7 @@ def resolve_creds(
 
   # Nothing so far... check environment variables
   now = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='microseconds').replace('+00:00','Z')
-  ic(now)
+  # ~ ic(now)
   if 'OS_AUTH_TOKEN' in os.environ:
     # OK, it was created by tcurl...
     if 'OS_AUTH_EXPIRES_AT' in os.environ:
@@ -330,16 +330,9 @@ def s3session(args:argparse.Namespace) -> api.ObsSession:
           securitytoken = creds['securitytoken'],
           awsv4_region = region,
   )
-  minis3 = {
-    'access_key': creds['ak'],
-    'secret_key': creds['sk'],
-  }
-  if creds['securitytoken'] is not None:
-    minis3['session_token'] = creds['securitytoken']
   return api.ObsSession(
         xhdrs = xhdrs,
         region = region,
-        s3creds = minis3,
         clean_up = clean_up,
   )
 
@@ -359,7 +352,7 @@ def session(
   if creds is None:
     raise PermissionError('No valid credentials')
 
-  ic(creds)
+  # ~ ic(creds)
   clean_up = None
   if creds['token'] is not None:
     # OK, we are using a token.

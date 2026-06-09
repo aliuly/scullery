@@ -112,7 +112,6 @@ def _list_buckets(args: argparse.Namespace,
     rows = formatters.extract_rows(data, cols)
     formatters.write_output(rows, cols, args.format)
 
-
 def list_buckets(args: argparse.Namespace) -> None:
     '''List all OBS buckets (no filtering)'''
     _list_buckets(args)
@@ -252,7 +251,7 @@ def delete_tags(args: argparse.Namespace) -> None:
         cc.bucket.delete_tagging(args.name)
         print(f'All tags removed from bucket "{args.name}".')
         return
-      
+
     ic(remaining)
 
     cc.bucket.set_tagging(args.name, remaining)

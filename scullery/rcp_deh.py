@@ -40,7 +40,7 @@ def run(args: argparse.Namespace) -> None:
   if isinstance(args.az,str):
     if args.az.isdigit():
       args.az = int(args.az)
-  ic(args)
+  # ~ ic(args)
   data = cc.deh.deh_types(args.az)
   rows = formatters.extract_rows(data, COLUMNS)
   formatters.write_output(rows, COLUMNS, args.format)

@@ -6,10 +6,7 @@ requests
 questionary
 ruamel.yaml
 configupdater
-
-# minis3
-# git+https://github.com/TheGU/minis3.git@v1.0.2
-git+https://github.com/alejandroliu/minis3.git@main
+python-magic
 
 # Custom libraries
 git+https://github.com/TortugaLabs/mypielib.git@main
