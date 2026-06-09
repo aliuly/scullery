@@ -34,7 +34,7 @@ from . import parsers
 from . import formatters
 from . import clouds
 
-RE_PRJSIG = re.compile(r'^-- \S+ created by \S+ using scullery -- project:(\S+)($|\|)')
+# ~ RE_PRJSIG = re.compile(r'^-- \S+ created by \S+ using scullery -- project:(\S+)($|\|)')
 
 # Columns for the list (default table) view.
 COLUMNS: formatters.Columns = [
@@ -135,29 +135,29 @@ def del_prj(args: argparse.Namespace) -> None:
             sys.stderr.write('- {provider}.{type} {name}\n'.format(**rs))
           continue
 
-      # Delete any associated users...
-      for u in cc.iam.users():
-        if 'description' not in u: continue
-        if not (mv := RE_PRJSIG.search(u['description'])): continue
-        if mv.group(1) != prjname: continue
-        cc.iam.del_user(u['id'])
-        sys.stderr.write(f'Deleted user {u["name"]}\n')
+      # ~ # Delete any associated users...
+      # ~ for u in cc.iam.users():
+        # ~ if 'description' not in u: continue
+        # ~ if not (mv := RE_PRJSIG.search(u['description'])): continue
+        # ~ if mv.group(1) != prjname: continue
+        # ~ cc.iam.del_user(u['id'])
+        # ~ sys.stderr.write(f'Deleted user {u["name"]}\n')
 
-      # Delete any associated groups
-      for g in cc.iam.groups():
-        if 'description' not in g: continue
-        if not (mv := RE_PRJSIG.search(g['description'])): continue
-        if mv.group(1) != prjname: continue
-        cc.iam.del_group(g['id'])
-        sys.stderr.write(f'Deleted group {g["name"]}\n')
+      # ~ # Delete any associated groups
+      # ~ for g in cc.iam.groups():
+        # ~ if 'description' not in g: continue
+        # ~ if not (mv := RE_PRJSIG.search(g['description'])): continue
+        # ~ if mv.group(1) != prjname: continue
+        # ~ cc.iam.del_group(g['id'])
+        # ~ sys.stderr.write(f'Deleted group {g["name"]}\n')
 
-      # Delete any associated roles
-      for r in cc.iam.custom_roles():
-        if 'description' not in r: continue
-        if not (mv := RE_PRJSIG.search(r['description'])): continue
-        if mv.group(1) != prjname: continue
-        cc.iam.del_role(r['id'])
-        sys.stderr.write(f'Deleted role {r["name"]}\n')
+      # ~ # Delete any associated roles
+      # ~ for r in cc.iam.custom_roles():
+        # ~ if 'description' not in r: continue
+        # ~ if not (mv := RE_PRJSIG.search(r['description'])): continue
+        # ~ if mv.group(1) != prjname: continue
+        # ~ cc.iam.del_role(r['id'])
+        # ~ sys.stderr.write(f'Deleted role {r["name"]}\n')
 
       ############################# TESTING ##########################
       # ~ sys.stderr.write(f'NOT Deleted {prjname} ({prjdat[0]["id"]})\n')

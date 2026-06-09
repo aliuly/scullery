@@ -15,6 +15,13 @@ Credentials are acquired via :func:`~scullery.clouds.s3session`.
 | get ``bucket`` ``key`` [``outfile``] | download an object |
 | rm ``bucket`` ``key`` | delete an object |
 | info ``bucket`` ``key`` | show object metadata |
+
+This is a basic implementation, just enough to support bootstrapping.
+It has the following limitations:
+
+* Max 1,000 objects per bucket
+* Can only upload/download objects that can fit in memory.
+* No support for resumable uploads/downloads.
 '''
 
 import argparse

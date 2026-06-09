@@ -32,7 +32,6 @@ setup(
         "questionary",
         "ruamel.yaml",
         "configupdater",
-        "minis3 @ git+https://github.com/alejandroliu/minis3.git@main",
         "mypielib @ git+https://github.com/TortugaLabs/mypielib.git@main",
         "tcurl @ git+https://github.com/aliuly/tcurl.git@main",
     ],
