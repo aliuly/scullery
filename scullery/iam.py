@@ -484,6 +484,27 @@ class Iam:
     resp.raise_for_status()
     return resp.json()['credential']
 
+  def agencies(self, name:str|None = None, trust_domain_id:str|None = None) -> list:
+    '''Get a list of agencies
+
+    :param name: match agency by name
+    :param trust_domain_id: ID of delegated domain
+    :returns: list of agencies
+    :raises RuntimeError: on error
+
+    Returns a list of all agencies.  If name is specified, only that agency
+    will be returned.
+    '''
+    params = {
+      'domain_id': self.domain(),
+    }
+    if name is not None: params['name'] = name
+    if trust_domain_id is not None: params['trust_domain_id'] = trust_domain_id
+    
+    resp = self.session.get(self.api_path('v3.0/OS-AGENCY/agencies'), params =params)
+    if resp.status_code != 200 or 'agencies' not in resp.json():
+      raise RuntimeError(resp.text)
+    return resp.json()['agencies']
 
 
 if __name__ == '__main__':

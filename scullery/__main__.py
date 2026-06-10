@@ -13,6 +13,7 @@ from . import api
 from . import parsers
 from . import proxycfg
 
+from . import rcp_agencies   # noqa: F401
 from . import rcp_buckets   # noqa: F401
 from . import rcp_cfgwiz    # noqa: F401
 from . import rcp_deh       # noqa: F401

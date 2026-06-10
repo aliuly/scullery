@@ -125,7 +125,7 @@ def download_object(args: argparse.Namespace) -> None:
   else:
     # Write raw bytes to stdout.
     sys.stdout.buffer.write(content)
-    sys.stderr.write(f'Downloaded s3://{args.bucket}/{args.key} - {len(content)} bytes\n"')
+    sys.stderr.write(f'Downloaded s3://{args.bucket}/{args.key} - {len(content)} bytes"\n')
 
 # ── Delete / Remove ───────────────────────────────────────────────────
 
