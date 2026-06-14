@@ -43,7 +43,8 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 from . import parsers
 from . import s3cfg
 from . import __meta__
-
+from . import formatters
+from . import clouds
 
 def logout(args: argparse.Namespace) -> None:
   '''Logout recipe'''
@@ -90,6 +91,23 @@ def logout(args: argparse.Namespace) -> None:
 
     if 'ak' in cached and args.s3cfg: s3cfg.update(None, None)
 
+
+
+def domains(args: argparse.Namespace) -> None:
+  cc = clouds.session(args)
+  data = cc.iam.domains()
+  if args.format == 'terminal':
+    for i in data:
+      if i['enabled']: print(i['id'],i['name'])
+  else:
+    COLUMNS: formatters.Columns = [
+      ('id',          'ID'),
+      ('name',        'Name'),
+      ('enabled',     'Enabled'),
+      ('description', 'Description'),
+    ]
+    rows = formatters.extract_rows(data, COLUMNS)
+    formatters.write_output(rows, COLUMNS, args.format)
 
 def login(args: argparse.Namespace) -> None:
   '''Login recipe'''
@@ -206,6 +224,13 @@ def parser(subp: argparse.ArgumentParser) -> None:
   pr.add_argument('--s3cfg',
                   action  = 'store_true',
                   help = 'Update ~/.s3cfg')
+
+  pr = subp.add_parser('domains',
+                       help='List available domains to user',
+                     )
+  formatters.add_format_arg(pr)
+  pr.set_defaults(recipe_cb=domains)
+
 
 
 parsers.register_parser('login', parser)

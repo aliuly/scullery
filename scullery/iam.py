@@ -502,9 +502,112 @@ class Iam:
     if trust_domain_id is not None: params['trust_domain_id'] = trust_domain_id
     
     resp = self.session.get(self.api_path('v3.0/OS-AGENCY/agencies'), params =params)
-    if resp.status_code != 200 or 'agencies' not in resp.json():
-      raise RuntimeError(resp.text)
+    resp.raise_for_status()
     return resp.json()['agencies']
+
+  def new_agency(self,
+                name: str,
+                trust_domain: str,
+                description: str = '',
+                duration: str|None = None,
+                ):
+    '''Create a new agency
+    :param name: name of agency
+    :param trust_domain: trust domain name to be delegated to
+    :param description: Description of agency
+    :param duration: None, it will never expire, other values are 'FOREVER' and 'ONEDAY'
+    '''
+    request = {
+      'name': name,
+      'domain_id': self.domain(),
+      'trust_domain_name': trust_domain,
+      'description': description,
+      'duration': duration,
+    }
+    resp = self.session.post(self.api_path('v3.0/OS-AGENCY/agencies'),
+                        json = { 'agency': request },
+                    )
+    resp.raise_for_status()
+
+  def del_agency(self, ag_id:str) -> None:
+    '''Delete agency
+
+    :param ag_id: Agency id to delete
+    :raises RuntimeError: on error
+    '''
+    ic(ag_id)
+    resp = self.session.delete(self.api_path(f'v3.0/OS-AGENCY/agencies/{ag_id}'))
+    resp.raise_for_status()
+
+  def agency_project_perms(self, ag_id:str, prj_id:str|None) -> list[dict]:
+    '''Get project permissions assigned to an agency
+    :param ag_id: agency id
+    :param prj_id: project_id
+    :returns: list of roles
+    '''
+    if prj_id is None:
+      domain_id = self.domain()    
+      resp = self.session.get(self.api_path(f'v3.0/OS-INHERIT/domains/{domain_id}/agencies/{ag_id}/roles/inherited_to_projects'))
+    else:
+      resp = self.session.get(self.api_path(f'v3.0/OS-AGENCY/projects/{prj_id}/agencies/{ag_id}/roles'))
+    resp.raise_for_status()
+    return resp.json()['roles']
+
+  def agency_grant_project(self, ag_id:str, role_id:str, prj_id:str|None = None):
+    '''Grant role/permissions to agency on a project
+    :param ag_id: agency id
+    :param role_id: role id
+    :param prj_id: project_id or None for inherit
+    '''
+    if prj_id is None:
+      domain_id = self.domain()    
+      resp = self.session.get(self.api_path(f'v3.0/OS-INHERIT/domains/{domain_id}/agencies/{ag_id}/roles/{role_id}/inherited_to_projects'))
+    else:
+      resp = self.session.put(self.api_path(f'v3.0/OS-AGENCY/projects/{prj_id}/agencies/{ag_id}/roles/{role_id}'))
+    resp.raise_for_status()
+
+  def agency_revoke_project(self, ag_id:str, prj_id:str, role_id:str):
+    '''Revoke role/permissions to agency on a project
+    :param ag_id: agency id
+    :param prj_id: project_id
+    :param role_id: role id
+    '''
+    if prj_id is None:
+      domain_id = self.domain()    
+      resp = self.session.delete(self.api_path(f'v3.0/OS-INHERIT/domains/{domain_id}/agencies/{ag_id}/roles/{role_id}/inherited_to_projects'))
+    else:
+      resp = self.session.delete(self.api_path(f'v3.0/OS-AGENCY/projects/{prj_id}/agencies/{ag_id}/roles/{role_id}'))
+    resp.raise_for_status()
+
+  def agency_domain_perms(self, ag_id:str) -> list[dict]:
+    '''Get all agency permissions
+
+    :param ag_id: Agency id to check
+    :raises RuntimeError: on error
+    '''
+    domain_id = self.domain()
+    resp = self.session.get(self.api_path(f'v3.0/OS-AGENCY/domains/{domain_id}/agencies/{ag_id}/roles'))
+    resp.raise_for_status()
+    return resp.json()['roles']
+
+  def agency_grant_domain(self, ag_id:str, role_id:str):
+    '''Grant role/permissions to agency on a project
+    :param ag_id: agency id
+    :param role_id: role id
+    '''
+    domain_id = self.domain()
+    resp = self.session.put(self.api_path(f'v3.0/OS-AGENCY/domains/{domain_id}/agencies/{ag_id}/roles/{role_id}'))
+    resp.raise_for_status()
+
+  def agency_revoke_domain(self, ag_id:str, role_id:str):
+    '''Revoke role/permissions to agency on a project
+    :param ag_id: agency id
+    :param role_id: role id
+    '''
+    domain_id = self.domain()
+    resp = self.session.delete(self.api_path(f'v3.0/OS-AGENCY/domains/{domain_id}/agencies/{ag_id}/roles/{role_id}'))
+    resp.raise_for_status()
+
 
 
 if __name__ == '__main__':
