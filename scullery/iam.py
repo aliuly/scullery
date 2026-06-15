@@ -566,7 +566,7 @@ class Iam:
       resp = self.session.put(self.api_path(f'v3.0/OS-AGENCY/projects/{prj_id}/agencies/{ag_id}/roles/{role_id}'))
     resp.raise_for_status()
 
-  def agency_revoke_project(self, ag_id:str, prj_id:str, role_id:str):
+  def agency_revoke_project(self, ag_id:str, role_id:str, prj_id:str|None = None):
     '''Revoke role/permissions to agency on a project
     :param ag_id: agency id
     :param prj_id: project_id
@@ -576,8 +576,10 @@ class Iam:
       domain_id = self.domain()    
       resp = self.session.delete(self.api_path(f'v3.0/OS-INHERIT/domains/{domain_id}/agencies/{ag_id}/roles/{role_id}/inherited_to_projects'))
     else:
+      # ic(prj_id, ag_id, role_id)
       resp = self.session.delete(self.api_path(f'v3.0/OS-AGENCY/projects/{prj_id}/agencies/{ag_id}/roles/{role_id}'))
-    resp.raise_for_status()
+      
+    if resp.status_code != 404: resp.raise_for_status()
 
   def agency_domain_perms(self, ag_id:str) -> list[dict]:
     '''Get all agency permissions

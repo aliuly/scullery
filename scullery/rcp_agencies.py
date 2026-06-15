@@ -84,7 +84,7 @@ def get_agency(args: argparse.Namespace) -> None:
           pp[prj['name']] = p
         else:
           pp[prj['id']] = {
-            'name': prj['name1'],
+            'name': prj['name'],
             'roles': p,
           }
     if pp: ag['project_perms'] = pp
