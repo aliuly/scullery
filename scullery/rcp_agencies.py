@@ -80,7 +80,8 @@ def get_agency(args: argparse.Namespace) -> None:
         if not args.all:
           for i in p:
             # Summarize...
-            del i['policy'], i['domain_id'], i['description_cn'], i['catalog'], i['id'], i['type']
+            for j in ['policy','domain_id', 'description_cn', 'catalog', 'id', 'type']:
+              if j in i: del i[j]
           pp[prj['name']] = p
         else:
           pp[prj['id']] = {
