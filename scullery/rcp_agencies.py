@@ -73,8 +73,8 @@ def get_agency(args: argparse.Namespace) -> None:
   for ag in data:
     if prjs is None: prjs = cc.iam.projects()
     if p := cc.iam.agency_domain_perms(ag['id']): ag['domain_perms'] = p
-    if p:= cc.iam.agency_inherit_perms(ag['id']): ag['inherit_perms'] = p
     pp = dict()
+    if p:= cc.iam.agency_project_perms(ag['id'], None): pp[''] = p
     for prj in prjs:
       if p := cc.iam.agency_project_perms(ag['id'], prj['id']):
         if not args.all:
