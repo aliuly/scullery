@@ -49,6 +49,7 @@ from . import parsers
 COLUMNS_BUCKETS: formatters.Columns = [
     ('name',          'Name'),
     ('creation_date', 'Created'),
+    ('region', 'Region'),
 ]
 
 
@@ -68,6 +69,13 @@ def _list_buckets(args: argparse.Namespace,
     for bucket in data:
         if 'creation_date' in bucket and bucket['creation_date']:
             bucket['creation_date'] = bucket['creation_date'][:10]
+    # Always fetch meta for every bucket.
+    for bucket in data:
+      try:
+        meta = cc.bucket.meta(bucket['name'])
+        bucket['region'] = meta['region']
+      except Exception:
+        bucket['region'] = ''
 
     cols = list(COLUMNS_BUCKETS)
 
