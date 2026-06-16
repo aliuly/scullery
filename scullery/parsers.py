@@ -45,6 +45,11 @@ def parser_factory(color:bool = False) -> argparse.ArgumentParser:
       action='store_true',
       default = False,
   )
+  cli.add_argument('-v', '--verbose',
+      help='Verbose output',
+      action='store_true',
+      default = False,
+  )
   if sys.platform == 'win32':
     if 'https_proxy' in os.environ:
       autocfg_default = False

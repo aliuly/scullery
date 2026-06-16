@@ -90,6 +90,7 @@ def resolve_creds(
   :param args: passed command line arguments
   :returns: dict with usable crednetials
   '''
+  v = args.verbose
   creds = {
     'token': None,
     'ak': None,
@@ -141,7 +142,7 @@ def resolve_creds(
       creds['user_domain_name'] = os.environ['OS_USER_DOMAIN_NAME']
       return creds
     elif (domain := resolve_from_yaml(f'clouds.{myname}.auth.user_domain_name'))[0] is not None:
-      sys.stderr.write(f'Using domain {domain[0]} from "{domain[1]}\n')
+      if v: sys.stderr.write(f'Using domain {domain[0]} from "{domain[1]}\n')
       creds['username'] = inargs['username']
       creds['password'] = inargs['password']
       creds['user_domain_name'] = domain[0]
@@ -157,18 +158,18 @@ def resolve_creds(
         if 'OS_AUTH_PROJECT_ID' in os.environ:
           if inargs['project'] is not None:
             # OK, we want a scoped token, assuming this is OK...
-            sys.stderr.write('Using "OS_AUTH_TOKEN" enviroment variable\n')
+            if v: sys.stderr.write('Using "OS_AUTH_TOKEN" enviroment variable\n')
             creds['token'] = os.environ['OS_AUTH_TOKEN']
             return creds
           sys.stderr.write('Ignoring environment variable "OS_AUTH_TOKEN", scoped token when unscoped token requested\n')
         elif (('OS_AUTH_USER_ID' in os.environ) or ('OS_AUTH_DOMAIN_ID' in os.environ)):
           # It should be an unscoped token...
-          sys.stderr.write('Using "OS_AUTH_TOKEN" enviroment variable\n')
+          if v: sys.stderr.write('Using "OS_AUTH_TOKEN" enviroment variable\n')
           creds['token'] = os.environ['OS_AUTH_TOKEN']
           return creds
         else:
           # We don't know if it is scoped or not...
-          sys.stderr.write('Using "OS_AUTH_TOKEN" enviroment variable\n')
+          if v: sys.stderr.write('Using "OS_AUTH_TOKEN" enviroment variable\n')
           creds['token'] = os.environ['OS_AUTH_TOKEN']
           return creds
       else:
@@ -178,14 +179,14 @@ def resolve_creds(
       creds['token'] = os.environ['OS_AUTH_TOKEN']
       return creds
   if 'OS_TOKEN' in os.environ:
-    sys.stderr.write('Using "OS_TOKEN" environment variable\n')
+    if v: sys.stderr.write('Using "OS_TOKEN" environment variable\n')
     creds['token'] = os.environ['OS_TOKEN']
     return creds
 
   if 'OS_ACCESS_KEY' in os.environ and 'OS_SECRET_KEY' in os.environ:
     if 'OS_AKSK_EXPIRES_AT' in os.environ and 'OS_SECURITY_TOKEN' in os.environ:
       if now < os.environ['OS_AUTH_EXPIRES_AT']:
-        sys.stderr.write('Using temporary AK/SK credentials from environment\n')
+        if v: sys.stderr.write('Using temporary AK/SK credentials from environment\n')
         creds['ak'] = os.environ['OS_ACCESS_KEY']
         creds['sk'] = os.environ['OS_SECRET_KEY']
         creds['securitytoken'] = os.environ['OS_SECURITY_TOKEN']
@@ -196,10 +197,10 @@ def resolve_creds(
       creds['ak'] = os.environ['OS_ACCESS_KEY']
       creds['sk'] = os.environ['OS_SECRET_KEY']
       if 'OS_SECURITY_TOKEN' in os.environ:
-        sys.stderr.write('Using temporary AK/SK credentials from environment\n')
+        if v: sys.stderr.write('Using temporary AK/SK credentials from environment\n')
         creds['securitytoken'] = os.environ['OS_SECURITY_TOKEN']
       else:
-        sys.stderr.write('Using permanent AK/SK credentials from environment\n')
+        if v: sys.stderr.write('Using permanent AK/SK credentials from environment\n')
       return creds
 
   if 'OS_USERNAME' in os.environ and 'OS_PASSWORD' in os.environ:
@@ -224,7 +225,7 @@ def resolve_creds(
   domain_id, _ = resolve_from_yaml(f'clouds.{myname}.cached.domain_id')
   if token is not None and expires_at is not None and domain_id is not None:
     if now < expires_at:
-      sys.stderr.write(f'Using token from {tk_file}\n')
+      if v: sys.stderr.write(f'Using token from {tk_file}\n')
       creds['token'] = token
       creds['domain_id'] = domain_id
       return creds
@@ -243,7 +244,7 @@ def resolve_creds(
       creds['sk'] = sk
       creds['securitytoken'] = session
       creds['domain_id'] = domain_id
-      sys.stderr.write(f'Using Temp AK/SK from {ak_file}\n')
+      if v: sys.stderr.write(f'Using Temp AK/SK from {ak_file}\n')
       return creds
     else:
       sys.stderr.write(f'Ignoring expired temp AK/SK credentials in {ak_file}\n')
@@ -252,7 +253,7 @@ def resolve_creds(
   ak,ak_file = resolve_from_yaml(f'clouds.{myname}.ak')
   sk,sk_file = resolve_from_yaml(f'clouds.{myname}.sk')
   if ak is not None and sk is not None:
-    sys.stderr.write(f'Using AK from {ak_file} and SK from {sk_file}\n')
+    if v: sys.stderr.write(f'Using AK from {ak_file} and SK from {sk_file}\n')
     creds['ak'] = ak
     creds['sk'] = sk
     return creds
@@ -267,7 +268,7 @@ def resolve_creds(
     files[f] = f
     creds[i] = k
   if count == 3:
-    sys.stderr.write(f'Using username+password from {", ".join(files.keys())}\n')
+    if v: sys.stderr.write(f'Using username+password from {", ".join(files.keys())}\n')
     return creds
 
   # OK no good credentials found
@@ -347,6 +348,7 @@ def session(
   '''
   if scoped and args.project is None:
     args.project = DEFAULT_REGION if args.region is None else args.region
+  v = args.verbose
 
   creds = resolve_creds(args=args)
   if creds is None:
@@ -374,7 +376,7 @@ def session(
         token = creds['token']
       else:
         # Assuming Unscoped token provided... re-issue with the right scope...
-        sys.stderr.write(f'Re-issuing scoped token for {args.project}\n')
+        if v: sys.stderr.write(f'Re-issuing scoped token for {args.project}\n')
         token, _ = tcurl.login(
             token = creds['token'],
             project = args.project,
