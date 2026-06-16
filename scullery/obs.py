@@ -281,6 +281,7 @@ class Buckets:
     Calls ``GET /`` on the OBS endpoint and parses the XML response.
     '''
     resp = self.session.request('get', '/')
+    # ~ ic(resp.content)
     root = ET.fromstring(resp.content)
     namespace = _ns(root)
 
@@ -293,6 +294,7 @@ class Buckets:
         buckets.append({
             'name': _text(bucket_elem, 'Name', namespace),
             'creation_date': _text(bucket_elem, 'CreationDate', namespace),
+
         })
     return buckets
 
@@ -957,10 +959,12 @@ class Buckets:
       resp = self.session.request('head','/', endpoint = host)
       headers = {
         'endpoint': host,
+        'region': region,
       }
     else:
       headers = {
-        'endpoint': f'{bucket}.{self.session.API_HOST.format(region=region)}'
+        'endpoint': f'{bucket}.{self.session.API_HOST.format(region=region)}',
+        'region': region,
       }
 
     headers.update(resp.headers)
